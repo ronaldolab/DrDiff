@@ -28,7 +28,8 @@ import scipy as sc
 #from time import sleep
 from itertools import islice
 from scipy import stats
-
+import fnmatch as fm
+import os
 
 ##################################################################################################
 # Function to print Free Energy and the Histogram to data file
@@ -40,7 +41,7 @@ def Free_energy_Histogram_Q(filename,Qf,Qbins):
    hist,bins=np.histogram(Qf[::1],int(np.ceil(np.max(Qf)/Qbins)),density=True) ##
    #hist,bins=np.histogram(Qf[::1],28,density=True)
    bins_center = (bins[:-1] + bins[1:])/2.0 ## Average of bins positions to plot
-   np.savetxt('hist_' + filename + '.dat',np.c_[bins_center,hist]) ## Write Histogram file
+   #np.savetxt('hist_' + filename + '.dat',np.c_[bins_center,hist]) ## Write Histogram file
    FQ = -np.log(hist) ## Free Energy calculation
    np.savetxt('Free_energy_' + filename + '.dat',np.c_[bins_center,FQ]) ## Write Free Energy file
    #print('Coordinate Histogram and Free Energy calculated')
@@ -60,10 +61,31 @@ def Jump_Histogram(filename,Qf):
    return
 ##################################################################################################
 
+
+##################################################################################################
+
+def CheckFiles(q):
+    for aw in os.listdir('.'):
+        for w in q: # Delete lines with "nan" and "inf" inside.
+            if aw==w:
+                ff = open(w,"r+")
+                dd = ff.readlines()
+                ff.seek(0)
+                for z in dd:
+                    if (("nan" not in z) and ("inf" not in z)):
+                        ff.write(z)
+                ff.truncate()
+                ff.close()
+    print '################## CHECKED ########################'
+return
+
+##################################################################################################
+
+
 ## Global variables declaration
 
 Eq=10 # Equilibration Steps - Value to ignore the first X numbers from the traj file
-Qbins=1.0 # Bins read from trajectory - Default Qbins=1 to proteins
+Qbins=1.5 # bins read from trajectory - Default Qbins=1 to proteins
 tmax=6 # Default 6
 tmin=2 # Default 2
 time_step=1 # time step value used to save the trajectory file - Default 0.001
@@ -137,7 +159,6 @@ def main():
    # name for files
    filename = f.name + '.' + str(tmin) + '.' + str(tmax) + '.' + str(Qbins)
 
-
    np.savetxt('DQ' + filename + '.dat',DQ) # Save to file
    np.savetxt('VQ' + filename + '.dat',VQ)
 
@@ -157,25 +178,14 @@ def main():
    #print G
    np.savetxt('GQ' + filename + '.dat',G)
 
-#Module to extract lines with errors
-
+   #Module to extract lines with errors
    diffusionfilename=str('DQ' + filename + '.dat') # Get the name of files
    vfilename=str('VQ' + filename + '.dat')
    freefilename=str('Free_energy_' + arg + '.dat')
    histfilename=str('hist_' + arg + '.dat')
    gibbsfilename=str('GQ' + filename + '.dat')
-   q=[diffusionfilename, vfilename, freefilename, histfilename,gibbsfilename] #Make a list with filenames
-   for w in q: # Delete lines with "nan" and "inf" inside.
-     ff = open(w,"r+")
-     dd = ff.readlines()
-     ff.seek(0)
-     for z in dd:
-        if (("nan" not in z) and ("inf" not in z)):
-           ff.write(z)
-     ff.truncate()
-     ff.close()
-
-   print '################## CHECKED ########################'
+   fn=[diffusionfilename, vfilename, freefilename, histfilename,gibbsfilename] #Make a list with filenames
+   CheckFiles(fn)
 
 
    return

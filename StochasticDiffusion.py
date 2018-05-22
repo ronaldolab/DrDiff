@@ -28,7 +28,7 @@ import scipy as sc
 #from time import sleep
 from itertools import islice
 from scipy import stats
-
+import os
 
 ##################################################################################################
 # Function to print Free Energy and the Histogram to data file
@@ -60,14 +60,35 @@ def Jump_Histogram(filename,Qf):
    return
 ##################################################################################################
 
+
+##################################################################################################
+
+def CheckFiles(q):
+    aw = os.listdir('.')
+    bw = set(q).intersection(aw)
+    for w in bw: # Delete lines with "nan" and "inf" inside.
+        ff = open(w,"r+")
+        dd = ff.readlines()
+        ff.seek(0)
+        for z in dd:
+            if (("nan" not in z) and ("inf" not in z)):
+                ff.write(z)
+        ff.truncate()
+        ff.close()
+    print '################## CHECKED ########################'
+    return
+
+##################################################################################################
+
+
 ## Global variables declaration
 
-Eq=1000 # Equilibration Steps - Value to ignore the first X numbers from the traj file
-Qbins=1.0 # Bins read from trajectory - Default Qbins=1 to proteins
+Eq=10 # Equilibration Steps - Value to ignore the first X numbers from the traj file
+Qbins=1.0 # bins read from trajectory - Default Qbins=1 to proteins
 tmax=6 # Default 6
 tmin=2 # Default 2
 time_step=1 # time step value used to save the trajectory file - Default 0.001
-Snapshot=10 # Snapshots from simulation
+Snapshot=1 # Snapshots from simulation
 CorrectionFactor = time_step*Snapshot
 
 #print '################################################'
@@ -131,9 +152,14 @@ def main():
       DQ.append([Qi,sloped/CorrectionFactor]) # Save Diffusion for each coordinate value
       VQ.append([Qi,slopev/CorrectionFactor]) # Save Drift for each coordinate value
    #Pbar.finish()
-   #print '################## DONE ########################'
-   np.savetxt('DQ.dat',DQ) # Save to file
-   np.savetxt('VQ.dat',VQ)
+   print '################## DONE ########################'
+#   np.savetxt('DQ.dat',DQ) # Save to file
+#   np.savetxt('VQ.dat',VQ)
+   # name for files
+   filename = f.name + '.' + str(tmin) + '.' + str(tmax) + '.' + str(Qbins)
+
+   np.savetxt('DQ' + filename + '.dat',DQ) # Save to file
+   np.savetxt('VQ' + filename + '.dat',VQ)
 
    #print VQ
    X=np.asarray([i[1] for i in DQ])
@@ -149,8 +175,16 @@ def main():
        #print Qi,W[i],i,np.log(X[i])
        i=i+1
    #print G
-   np.savetxt('GQ.dat',G)
+   np.savetxt('GQ' + filename + '.dat',G)
 
+   #Module to extract lines with errors
+   diffusionfilename=str('DQ' + filename + '.dat') # Get the name of files
+   vfilename=str('VQ' + filename + '.dat')
+   freefilename=str('Free_energy_' + arg + '.dat')
+   histfilename=str('hist_' + arg + '.dat')
+   gibbsfilename=str('GQ' + filename + '.dat')
+   fn=[diffusionfilename, vfilename, freefilename, histfilename,gibbsfilename] #Make a list with filenames
+   CheckFiles(fn)
 
 
    return
