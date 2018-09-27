@@ -165,6 +165,7 @@ def main():
    X=np.asarray([i[1] for i in DQ])
    Y=np.asarray([i[1] for i in VQ])
    Z=Y/X
+   Z[Z == np.inf] = 0
    W=np.cumsum(Z)
    #print W,W[1],Z
    G=[]
