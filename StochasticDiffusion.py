@@ -80,6 +80,35 @@ def CheckFiles(q):
 
 ##################################################################################################
 
+##################################################################################################
+
+def calctau(beta,Qmin,Qzero,Qone,Qbins,DQ,G):
+    i=[]
+    j=[]
+    k=[]
+    tau = 0
+    utau = 0
+    DQ = np.asarray(DQ)
+    G = np.asarray(G)
+    #tau=[]
+    for Qj in np.linspace(Qzero,Qone,num=abs((abs(int(Qone-Qzero))/Qbins)+1)):
+        i = np.isin(DQ,Qj)
+        irow = np.where(i[:,0])
+        j = np.isin(G,Qj)
+        jrow = np.where(j[:,0])
+        for Qk in np.linspace(Qmin,Qj,num=abs((abs(int(Qj-Qmin))/Qbins)+1)):
+            k = np.isin(G,Qk)
+            krow = np.where(k[:,0])
+            if float(DQ[(np.int(irow[0])),1]) == 0:
+                utau = 0
+            elif np.size(irow) != 0 and np.size(jrow) != 0 and np.size(krow) !=0 :
+                utau = ((np.exp(beta*(float(G[np.int(jrow[0]),1])-float(G[np.int(krow[0]),1]))))/(float(DQ[np.int(irow[0]),1])))
+            else:
+                utau = 0
+            tau = tau + utau
+    return tau
+
+##################################################################################################
 
 ## Global variables declaration
 
@@ -90,6 +119,7 @@ tmin=2 # Default 2
 time_step=1 # time step value used to save the trajectory file - Default 0.001
 Snapshot=1 # Snapshots from simulation
 CorrectionFactor = time_step*Snapshot
+beta=1 #beta is 1/k_B*T
 
 #print '################################################'
 print 'Equilibration Steps =',Eq
@@ -115,8 +145,10 @@ def main():
    #print '################################################'
    #Pbar = progressbar.ProgressBar(term_width=53,widgets=['Working: ',progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
    Q = np.asarray([float(line.rstrip()) for line in islice(f, Eq, None)]) # Save the coordinate value skipping the Equilibration steps
-   Qmax = np.int(np.max(Q)) # take the max and min value
-   Qmin = np.int(np.min(Q))
+   #Qmax = np.int(np.max(Q)) # take the max and min value
+   #Qmin = np.int(np.min(Q))
+   Qmax = np.max(Q) # take the max and min value
+   Qmin = np.min(Q)
    print 'From trajectory file'
    print 'Qmax =',Qmax,'| Qmin =',Qmin
    print 'Mean(Q) =',np.mean(Q),'| Std(Q) =',np.std(Q)
@@ -126,6 +158,7 @@ def main():
    Free_energy_Histogram_Q(arg,Q,Qbins) ## Call function to Free Energy and Histogram
    DQ=[]
    VQ=[]
+
    Add_end=np.arange(Qmax,Qmax+tmax+1) ## Vector just to avoid the empty end of file
    #Add_end=np.linspace(Qmax,Qmax+Qbins,tmax+1)
    Q = np.concatenate((Q,Add_end))
@@ -149,8 +182,8 @@ def main():
 
       sloped, interceptd, r_valued, p_valued, std_errd = stats.linregress(D) # Linear regression - sloped is the difusion
       slopev, interceptv, r_valuev, p_valuev, std_errv = stats.linregress(V) # Linear regression - slopev is the drift
-      DQ.append([Qi,sloped/CorrectionFactor]) # Save Diffusion for each coordinate value
-      VQ.append([Qi,slopev/CorrectionFactor]) # Save Drift for each coordinate value
+      DQ.append([Qi,sloped/CorrectionFactor,std_errd]) # Save Diffusion for each coordinate value
+      VQ.append([Qi,slopev/CorrectionFactor,std_errv]) # Save Drift for each coordinate value
    #Pbar.finish()
    print '################## DONE ########################'
 #   np.savetxt('DQ.dat',DQ) # Save to file
@@ -169,14 +202,27 @@ def main():
    W=np.cumsum(Z)
    #print W,W[1],Z
    G=[]
+   ttau=[]
    i=0
    for Qi in np.arange(Qmin+1.0,Qmax-1.0,Qbins):
-
        G.append([Qi,(-W[i]+np.log(X[i]))])
        #print Qi,W[i],i,np.log(X[i])
        i=i+1
    #print G
    np.savetxt('GQ' + filename + '.dat',G)
+
+   ttaufold=[]
+   ttauunfold=[]
+
+   Qqzero = 80
+   Qqone = 230
+   if Qqzero>Qqone:Qqzero,Qqone=Qqone,Qqzero # Must Qzero < Qone
+
+   ttaufold = calctau(beta,Qmin,Qqzero,Qqone,Qbins,DQ,G)
+   ttauunfold = calctau(beta,Qmax,Qqone,Qqzero,Qbins,DQ,G)
+
+   print('mfpt measured using Kramers equation from ' + str(Qqzero) + ' to ' + str(Qqone) + ' is ' + str(ttaufold))
+   print('mfpt measured using Kramers equation from ' + str(Qqone) + ' to ' + str(Qqzero) + ' is ' + str(ttauunfold))
 
    #Module to extract lines with errors
    diffusionfilename=str('DQ' + filename + '.dat') # Get the name of files
