@@ -28,16 +28,17 @@ import scipy as sc
 #from time import sleep
 from itertools import islice
 from scipy import stats
+from scipy import integrate
 import os
 
 ##################################################################################################
 # Function to print Free Energy and the Histogram to data file
 #   F(Q) = - np.log [number-of-states(Q)]
 ##################################################################################################
-def Free_energy_Histogram_Q(filename,Qf,Qbins):
-
+def Free_energy_Histogram_Q(filename,Qf,nbins):
    #Histogram calculation
-   hist,bins=np.histogram(Qf[::1],int(np.ceil(np.max(Qf)/Qbins)),density=True) ##
+   #hist,bins=np.histogram(Qf[::1],int(np.ceil(np.max(Qf)/Qbins)),density=True) ##
+   hist,bins=np.histogram(Qf[::1],nbins,density=True) ##
    #hist,bins=np.histogram(Qf[::1],28,density=True)
    bins_center = (bins[:-1] + bins[1:])/2.0 ## Average of bins positions to plot
    #np.savetxt('hist_' + filename + '.dat',np.c_[bins_center,hist]) ## Write Histogram file
@@ -53,7 +54,6 @@ def Free_energy_Histogram_Q(filename,Qf,Qbins):
 #
 ##################################################################################################
 def Jump_Histogram(filename,Qf):
-
    hist,bins=np.histogram(Qf[::1],density=True) ## Histogram calculation
    bins_center = (bins[:-1] + bins[1:])/2.0 ## Average of bins positions to plot
    #np.savetxt('H_' + filename + '.dat',np.c_[bins_center,hist]) ## Write Histogram file
@@ -61,6 +61,9 @@ def Jump_Histogram(filename,Qf):
 ##################################################################################################
 
 
+##################################################################################################
+# Function to check files output and delete lines with "nan" and "inf"
+#
 ##################################################################################################
 
 def CheckFiles(q):
@@ -71,7 +74,7 @@ def CheckFiles(q):
         dd = ff.readlines()
         ff.seek(0)
         for z in dd:
-            if (("nan" not in z) and ("inf" not in z)):
+            if (("nan" not in z) and ("inf" not in z) and ("-inf" not in z)):
                 ff.write(z)
         ff.truncate()
         ff.close()
@@ -81,22 +84,245 @@ def CheckFiles(q):
 ##################################################################################################
 
 
+##################################################################################################
+# Function to calculate t_{folding} using Kramers equation
+#
+##################################################################################################
+
+def calctau(beta,Qinit,Qzero,Qone,DQ,G):
+    atau = 0
+    utau = 0
+    DQ = np.asarray(DQ)
+    G = np.asarray(G)
+    G = G[~np.isnan(G).any(axis=1)]
+    G = G[~np.isneginf(G).any(axis=1)]
+    G = G[~np.isinf(G).any(axis=1)]
+    DQ = DQ[~np.isnan(DQ).any(axis=1)]
+    DQ = DQ[~np.isneginf(DQ).any(axis=1)]
+    DQ = DQ[~np.isinf(DQ).any(axis=1)]
+    tau = np.empty(shape=[0,2])
+    taul = np.empty(shape=[0,2])
+    idxzero = (np.abs(G[:,0]-Qzero)).argmin() #get index of Q value close to Qzero
+    idxone = (np.abs(G[:,0]-Qone)).argmin() #get index of Q value close to Qone
+    if Qzero < Qone: x=1
+    else: x=-1
+    for Qj in G[:,0][idxzero:idxone+x:x]: #summing from Qzero to Qone
+        irow,icol = np.where(DQ == Qj)
+        jrow,jcol = np.where(G == Qj)
+        tau = np.empty(shape=[0,2])
+        idxinit = (np.abs(G[:,0]-Qinit)).argmin()
+        idxj = (np.abs(G[:,0]-Qj)).argmin()
+        if Qinit < Qj: y=1
+        else: y=-1
+        for Qk in G[:,0][idxinit:idxj+y:y]: #summing from Qinit to Qj
+            krow,kcol = np.where(G == Qk)
+            if (np.size(irow) != 0 and np.size(jrow) != 0 and np.size(krow) != 0):
+                if not ((abs(float(G[np.int(jrow[0]),1])) >= (abs(np.nanmean(G,axis=0)[1])+abs(3*np.nanstd(G,axis=0)[1]))) or (abs(float(G[np.int(jrow[0]),1])) <= (abs(np.nanmean(G,axis=0)[1])-abs(3*np.nanstd(G,axis=0)[1])))):
+                    GQ1 = (float(G[np.int(jrow[0]),1]))
+                else:
+                    GQ1 = np.nan
+                if not ((abs(float(G[np.int(krow[0]),1])) >= (abs(np.nanmean(G,axis=0)[1])+abs(3*np.nanstd(G,axis=0)[1]))) or (abs(float(G[np.int(krow[0]),1])) <= (abs(np.nanmean(G,axis=0)[1])-abs(3*np.nanstd(G,axis=0)[1])))):
+                    GQ2 = (float(G[np.int(krow[0]),1]))
+                else:
+                    GQ2 = np.nan
+                utau = ((np.exp(beta*(GQ1-GQ2)))/(float(DQ[np.int(irow[0]),1]))) #calculating t_folding/unfolding
+            else:
+                utau = 0
+            tau = np.append(tau, [[Qk, utau]], axis=0)
+            tau = tau[~np.isnan(tau).any(axis=1)]
+            tau = tau[~np.isneginf(tau).any(axis=1)]
+            tau = tau[~np.isinf(tau).any(axis=1)]
+        inttau = integrate.cumtrapz(tau[:,1], tau[:,0], axis=0, initial=tau[0,1])[-1] #inner integral
+        taul = np.append(taul, [[Qj, inttau]], axis=0)
+        taul = taul[~np.isnan(taul).any(axis=1)]
+        taul = taul[~np.isneginf(taul).any(axis=1)]
+        taul = taul[~np.isinf(taul).any(axis=1)]
+    inttaul = integrate.cumtrapz(taul[:,1], taul[:,0], axis=0, initial=taul[0,1])[-1] #outer integral
+    return inttaul
+
+##################################################################################################
+
+
+
+##################################################################################################
+# Function to calculate analytical mtpt
+#
+##################################################################################################
+def calcmtpt(beta,Qzero,Qone,DQ,G):
+    DQ = np.asarray(DQ)
+    G = np.asarray(G)
+    #left part of the integral
+    vlint = simpleint(testcalc,lcoreint,beta,Qzero,Qone,G,DQ)
+    intlintegral = integrate.cumtrapz(vlint[:,1], vlint[:,0], axis=0, initial=vlint[0,1])[-1] #left integral from Qunf to Qfold
+    #right part of integral
+    vrint = simpleint(testcalc,rcoreint,beta,Qzero,Qone,G,DQ)
+    intrintegral = integrate.cumtrapz(vrint[:,1], vrint[:,0], axis=0, initial=vrint[0,1])[-1] #right integral from Qunf to Qfold
+    inttpt = intlintegral*intrintegral
+    return inttpt
+##################################################################################################
+
+##################################################################################################
+# Equation for mtpt - right integral
+#
+##################################################################################################
+def rcoreint(irow,jrow,G,DQ,beta,GQ1,Qx,Qzero,Qone):
+    return ((np.exp(beta*(GQ1)))/(float(DQ[np.int(irow[0]),1]))) #calculating rintegral
+
+
+##################################################################################################
+# Equation for mtpt - left integral
+#
+##################################################################################################
+def lcoreint(irow,jrow,G,DQ,beta,GQ1,Qx,Qzero,Qone):
+    xphi = phi(beta,Qzero,Qone,DQ,G,Qx)
+    return (np.exp(-1*beta*(GQ1))*xphi*(1-xphi)) #calculating lintegral
+
+##################################################################################################
+# Function to \phi(x)
+#
+##################################################################################################
+def phi(beta,Qzero,Qone,DQ,G,qx):
+    DQ = np.asarray(DQ)
+    G = np.asarray(G)
+    vlowphi = simpleint(testcalc,equationphi,beta,Qzero,Qone,G,DQ)
+    intlowphi = integrate.cumtrapz(vlowphi[:,1], vlowphi[:,0], axis=0, initial=vlowphi[0,1])[-1] #denominator integral from Qzero to Qone
+    vupphi =  simpleint(testcalc,equationphi,beta,Qzero,qx,G,DQ)
+    intupphi = integrate.cumtrapz(vupphi[:,1], vupphi[:,0], axis=0, initial=vupphi[0,1])[-1] #numerator integral from Qzero to Q
+    phix = (intupphi/intlowphi)
+    return phix
+##################################################################################################
+
+##################################################################################################
+# Function to evaluate values to a simple integral
+#
+##################################################################################################
+def simpleint(calctest,funcion,beta,Qzero,Qone,G,DQ):
+    G = G[~np.isnan(G).any(axis=1)]
+    G = G[~np.isneginf(G).any(axis=1)]
+    G = G[~np.isinf(G).any(axis=1)]
+    DQ = DQ[~np.isnan(DQ).any(axis=1)]
+    DQ = DQ[~np.isneginf(DQ).any(axis=1)]
+    DQ = DQ[~np.isinf(DQ).any(axis=1)]
+    sampledvalues = np.empty(shape=[0,2]) #initializing two column numpy array
+    idxzero = (np.abs(G[:,0]-Qzero)).argmin() #get index of Q value close to Qzero
+    idxone = (np.abs(G[:,0]-Qone)).argmin() #get index of Q value close to Qone
+    if Qzero < Qone: x=1
+    else: x=-1
+    for Qx in G[:,0][idxzero:idxone+x:x]:  #summing from Qzero to Qone
+        irow,icol = np.where(DQ == Qx)
+        jrow,jcol = np.where(G == Qx)
+        sampledvalues = np.append(sampledvalues, [[Qx,calctest(funcion,irow,jrow,G,DQ,beta,Qx,Qzero,Qone)]], axis=0)
+        sampledvalues = sampledvalues[~np.isnan(sampledvalues).any(axis=1)]
+        sampledvalues = sampledvalues[~np.isneginf(sampledvalues).any(axis=1)]
+        sampledvalues = sampledvalues[~np.isinf(sampledvalues).any(axis=1)]
+    return sampledvalues
+##################################################################################################
+
+##################################################################################################
+# Function to calculate core of \phi(x) integral
+#
+##################################################################################################
+def equationphi(irow,jrow,G,DQ,beta,GQ1,Qx,Qzero,Qone):
+    return ((np.exp(beta*(GQ1)))/(float(DQ[np.int(irow[0]),1]))) #calculating phi core
+##################################################################################################
+
+##################################################################################################
+# Test to avoid invalid values and evaluate the chosen equation
+#
+##################################################################################################
+def testcalc(eq,irow,jrow,G,DQ,beta,Qx,Qzero,Qone):
+    eval = 0
+    if (np.size(irow) != 0 and np.size(jrow) != 0):
+        if not ((abs(float(G[np.int(jrow[0]),1])) >= (abs(np.nanmean(G,axis=0)[1])+abs(3*np.nanstd(G,axis=0)[1]))) or (abs(float(G[np.int(jrow[0]),1])) <= (abs(np.nanmean(G,axis=0)[1])-abs(3*np.nanstd(G,axis=0)[1])))):
+            GQ1 = (float(G[np.int(jrow[0]),1]))
+        else:
+            GQ1 = np.nan
+        eval = eq(irow,jrow,G,DQ,beta,GQ1,Qx,Qzero,Qone)
+    else:
+        eval = 0
+    return eval
+##################################################################################################
+
+
+##################################################################################################
+# Function to calculate mfpt, mtpt and number of transitions from trajectory
+#
+##################################################################################################
+def calcttrajectory(Qzero,Qone,Qtr):
+    tAB = tBA = tTP = nAB = nBA = t0  = t1 = t2 = 0
+    resultsAB = np.empty(shape=[0,4])
+    resultsBA = np.empty(shape=[0,4])
+    resultsTP0 = np.empty(shape=[0,4])
+    resultsTP2 = np.empty(shape=[0,4])
+    if Qtr[0] <= Qzero: s = 0 #Defines initial state. A is s==0
+    elif Qtr[0] >= Qone: s = 2 #B is s==2
+    else: s = 1 # transition state
+    for i in range(np.size(Qtr)):
+        if s == 0:
+          if Qtr[i] <= Qzero: t1 = i+1 #identify last time when Q is lower than Q0
+          if Qtr[i] >= Qone: #identify when Q is greater than Q1
+            t2 = i+1
+            nAB = nAB + 1 #count a transition
+            s = 2
+            resultsAB = np.append(resultsAB, [[nAB,t0,t1,(t2-t0)]], axis=0) #add results in a row
+            resultsTP0 = np.append(resultsTP0, [[nAB,t1,t2,(t2-t1)]], axis=0)
+            t0 = t2
+            t1 = t2
+        elif s == 2:
+          if Qtr[i] >= Qone: t1 = i+1 #identify last time when Q is greater than Q1
+          if Qtr[i] <= Qzero: #identify when Q is lower than Q0
+            t2 = i+1
+            nBA = nBA +1 #count a transition
+            s = 0
+            resultsBA = np.append(resultsBA, [[nBA,t0,t1,(t2-t0)]], axis=0)
+            resultsTP2 = np.append(resultsTP2, [[nBA,t1,t2,(t2-t1)]], axis=0)
+            t0 = t2
+            t1 = t2
+        elif s == 1:
+            if Qtr[i+1] <= Qzero: s = 0
+            elif Qtr[i+1] >= Qone: s = 2
+    tAB = (np.sum(resultsAB, axis=0)[3])/nAB
+    #print tAB
+    #print np.nanmean(resultsAB, axis=0)[3]
+    stdtAB = np.nanstd(resultsAB, axis=0)[3]
+    tBA = (np.sum(resultsBA, axis=0)[3])/nBA
+    stdtBA = np.nanstd(resultsBA, axis=0)[3]
+    nTPAB = (resultsTP0[(np.size(resultsTP0, axis=0)-1)][0])
+    tTPAB = (np.sum(resultsTP0, axis=0)[3])/nTPAB
+    stdtTPAB = np.nanstd(resultsTP0, axis=0)[3]
+    nTPBA = (resultsTP2[(np.size(resultsTP2, axis=0)-1)][0])
+    tTPBA = (np.sum(resultsTP2, axis=0)[3])/nTPBA
+    stdtTPBA = np.nanstd(resultsTP2, axis=0)[3]
+    nTP = (resultsTP0[(np.size(resultsTP0, axis=0)-1)][0])+(resultsTP2[(np.size(resultsTP2, axis=0)-1)][0])
+    tTP = ((np.sum(resultsTP0, axis=0)[3])+(np.sum(resultsTP2, axis=0)[3]))/(nTP)
+    #np.savetxt('Results.dat',resultsAB) #to print results matrix in a file
+    return tAB,tBA,nTPAB,tTPAB,nTPBA,tTPBA,nAB,nBA,nTP,tTP,stdtAB,stdtBA,stdtTPAB,stdtTPBA
+##################################################################################################
+
+
+##################################################################################################
 ## Global variables declaration
 
 Eq=10 # Equilibration Steps - Value to ignore the first X numbers from the traj file
-Qbins=1.0 # bins read from trajectory - Default Qbins=1 to proteins
+Qbins=1 # Estimated bin width used to analyze the trajectory
 tmax=6 # Default 6
 tmin=2 # Default 2
-time_step=1 # time step value used to save the trajectory file - Default 0.001
-Snapshot=1 # Snapshots from simulation
+time_step=0.0005 # time step value used to save the trajectory file - Default 0.001
+Snapshot=50 # Snapshots from simulation
 CorrectionFactor = time_step*Snapshot
+beta=1 # beta is 1/k_B*T
+Q_zero = 80 # transition boundaries
+Q_one = 230
+
 
 #print '################################################'
 print 'Equilibration Steps =',Eq
-print 'Bins read from trajectory =',Qbins
+print 'Bin width read from trajectory =',Qbins
 print 'Time Step =',time_step
 print 'Snapshot =',Snapshot
 print 'tmax =',tmax,'| tmin =',tmin
+print 'beta =',beta
+print 'Transition state boundaries = ',Q_zero,' and ',Q_one
 #print '################################################'
 
 def main():
@@ -115,23 +341,28 @@ def main():
    #print '################################################'
    #Pbar = progressbar.ProgressBar(term_width=53,widgets=['Working: ',progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
    Q = np.asarray([float(line.rstrip()) for line in islice(f, Eq, None)]) # Save the coordinate value skipping the Equilibration steps
-   Qmax = np.int(np.max(Q)) # take the max and min value
-   Qmin = np.int(np.min(Q))
+   Qmax = np.max(Q) # take the max and min value
+   Qmin = np.min(Q)
    print 'From trajectory file'
    print 'Qmax =',Qmax,'| Qmin =',Qmin
    print 'Mean(Q) =',np.mean(Q),'| Std(Q) =',np.std(Q)
    print 'Std(Q)/Mean(Q) =',np.std(Q)/np.mean(Q)
    #print '################################################'
-   #Qmax=1.0
-   Free_energy_Histogram_Q(arg,Q,Qbins) ## Call function to Free Energy and Histogram
+   nbins = np.int(np.ceil((Qmax-Qmin)/Qbins))
+   Free_energy_Histogram_Q(arg,Q,nbins) ## Call function to Free Energy and Histogram
    DQ=[]
    VQ=[]
-   Add_end=np.arange(Qmax,Qmax+tmax+1) ## Vector just to avoid the empty end of file
-   #Add_end=np.linspace(Qmax,Qmax+Qbins,tmax+1)
+
+   #Add_end=np.arange(Qmax,Qmax+tmax+1) ## Vector just to avoid the empty end of file
+   Add_end=np.linspace(Qmax,Qmax+Qbins,tmax+1)
    Q = np.concatenate((Q,Add_end))
    #Pbar.start()
-   for Qi in np.arange(Qmin+1.0,Qmax-1.0,Qbins):
-      Q_index = np.array(np.where( (Qi + Qbins >= Q) & (Qi - Qbins <= Q)))[0] ## Find the Value of Qi with a bin in trajectory
+   #for Qi in np.arange(Qmin+1.0,Qmax-1.0,Qbins): #just for test
+   bins = np.linspace(Qmin,Qmax,nbins+1)
+   binscenter = np.delete((bins[:-1] + bins[1:])/2.0,-1)
+   for Qi in binscenter:
+   #for Qi in np.delete(np.linspace(Qmin,Qmax,nbins+1),-1):
+      Q_index = np.array(np.where( (Qi + Qbins > Q) & (Qi - Qbins < Q)))[0] ## Find the Value of Qi with a bin in trajectory
       x=Q[Q_index]
       D=[]
       V=[]
@@ -149,43 +380,85 @@ def main():
 
       sloped, interceptd, r_valued, p_valued, std_errd = stats.linregress(D) # Linear regression - sloped is the difusion
       slopev, interceptv, r_valuev, p_valuev, std_errv = stats.linregress(V) # Linear regression - slopev is the drift
-      DQ.append([Qi,sloped/CorrectionFactor]) # Save Diffusion for each coordinate value
-      VQ.append([Qi,slopev/CorrectionFactor]) # Save Drift for each coordinate value
+      DQ.append([Qi,sloped/CorrectionFactor,std_errd]) # Save Diffusion for each coordinate value
+      VQ.append([Qi,slopev/CorrectionFactor,std_errv]) # Save Drift for each coordinate value
    #Pbar.finish()
    print '################## DONE ########################'
-#   np.savetxt('DQ.dat',DQ) # Save to file
-#   np.savetxt('VQ.dat',VQ)
+   # np.savetxt('DQ.dat',DQ) # Save to file
+   # np.savetxt('VQ.dat',VQ)
    # name for files
    filename = f.name + '.' + str(tmin) + '.' + str(tmax) + '.' + str(Qbins)
+
+   DQ = np.asarray(DQ)
+   VQ = np.asarray(VQ)
 
    np.savetxt('DQ' + filename + '.dat',DQ) # Save to file
    np.savetxt('VQ' + filename + '.dat',VQ)
 
    #print VQ
-   X=np.asarray([i[1] for i in DQ])
-   Y=np.asarray([i[1] for i in VQ])
-   Z=Y/X
-   Z[Z == np.inf] = 0
-   W=np.cumsum(Z)
-   #print W,W[1],Z
-   G=[]
-   i=0
-   for Qi in np.arange(Qmin+1.0,Qmax-1.0,Qbins):
 
-       G.append([Qi,(-W[i]+np.log(X[i]))])
-       #print Qi,W[i],i,np.log(X[i])
-       i=i+1
+   #to calculate F_{Stochastic}
+   Z = np.stack((DQ[:,0],VQ[:,1]/DQ[:,1],DQ[:,2]+VQ[:,2]), axis=-1)
+   Z = Z[~np.isnan(Z).any(axis=1)]
+   Z = Z[~np.isinf(Z).any(axis=1)]
+   Z = Z[~np.isneginf(Z).any(axis=1)]
+   W = np.stack((Z[:,0],integrate.cumtrapz(Z[:,1], Z[:,0], initial=Z[:,1][0]),Z[:,2]), axis=-1)
+   G = np.empty(shape=[0,3])
+   for Qi in DQ[:,0]:
+       irow,icol = np.where(W == Qi)
+       jrow,jcol = np.where(DQ == Qi)
+       if (np.size(irow) != 0 and np.size(jrow) != 0):
+           GQ = -(float(W[np.int(irow[0]),1]))+np.log(float(DQ[np.int(jrow[0]),1]))
+           er = W[:,2][np.int(irow[0])]
+       else:
+           GQ = np.nan
+           er = np.nan
+       G = np.append(G,[[Qi,GQ,er]], axis=0)
+
+   G = G[~np.isnan(G).any(axis=1)]
+   G = G[~np.isinf(G).any(axis=1)]
+   G = G[~np.isneginf(G).any(axis=1)]
    #print G
    np.savetxt('GQ' + filename + '.dat',G)
+
 
    #Module to extract lines with errors
    diffusionfilename=str('DQ' + filename + '.dat') # Get the name of files
    vfilename=str('VQ' + filename + '.dat')
    freefilename=str('Free_energy_' + arg + '.dat')
    histfilename=str('hist_' + arg + '.dat')
-   gibbsfilename=str('GQ' + filename + '.dat')
-   fn=[diffusionfilename, vfilename, freefilename, histfilename,gibbsfilename] #Make a list with filenames
+   helmfilename=str('GQ' + filename + '.dat')
+   fn=[diffusionfilename, vfilename, freefilename, histfilename, helmfilename] #Make a list with filenames
    CheckFiles(fn)
+
+   Qqzero = Q_zero
+   Qqone = Q_one
+
+   if Qqzero>Qqone:Qqzero,Qqone=Qqone,Qqzero # Must be Qqzero < Qqone
+
+   ttaufold = calctau(beta,Qmin,Qqzero,Qqone,DQ,G)
+   ttauunfold = calctau(beta,Qmax,Qqone,Qqzero,DQ,G)
+   ttTP = calcmtpt(beta,Qqzero,Qqone,DQ,G)
+   ttTPb = calcmtpt(beta,Qqone,Qqzero,DQ,G)
+
+   ctAB,ctBA,cnTPAB,ctTPAB,cnTPBA,ctTPBA,cnAB,cnBA,cnTP,ctTP,cstdtAB,cstdtBA,cstdtTPAB,cstdtTPBA = calcttrajectory(Qqzero,Qqone,Q)
+
+
+   print('mfpt calculated using Kramers equation from ' + str(Qqzero) + ' to ' + str(Qqone) + ' is ' + str(ttaufold))
+   print('mfpt calculated using Kramers equation from ' + str(Qqone) + ' to ' + str(Qqzero) + ' is ' + str(ttauunfold))
+   print('mfpt measured using the trajectory from ' + str(Qqzero) + ' to ' + str(Qqone) + ' is ' + str(CorrectionFactor*ctAB) + ' with ' + str(cnAB) + ' transitions.' )
+   print('mfpt measured using the trajectory from ' + str(Qqone) + ' to ' + str(Qqzero) + ' is ' + str(CorrectionFactor*ctBA) + ' with ' + str(cnBA) + ' transitions.' )
+   print('mtpt measured using the trajectory from ' + str(Qqzero) + ' to ' + str(Qqone) + ' is ' + str(CorrectionFactor*ctTPAB) + ' with ' + str(cnTPAB) + ' transitions.' )
+   print('mtpt measured using the trajectory from ' + str(Qqone) + ' to ' + str(Qqzero) + ' is ' + str(CorrectionFactor*ctTPBA) + ' with ' + str(cnTPBA) + ' transitions.' )
+   print('Average mtpt measured using the trajectory between ' + str(Qqzero) + ' and ' + str(Qqone) + ' is ' + str(CorrectionFactor*ctTP) + ' with ' + str(cnTP) + ' transitions.' )
+   print('mtpt calculated using Szabo equation for folding is ' + str(ttTP) + ' and for unfolding is '+ str(ttTPb) )
+
+   matres = np.empty(shape=[0,16])
+
+   matres = np.append(matres, [['#mfpt-AB-Kramers', 'mfpt-BA-Kramers', 'mfpt-AB-trajectory', 'std-AB-trajectory', 'nAB', 'mfpt-BA-trajectory', 'std-BA-trajectory', 'nBA', 'average-mfpt', 'total-transitions', 'mtpt-AB-trajectory', 'std-mtpt-AB-trajectory','mtpt-BA-trajectory', 'std-mtpt-BA-trajectory','mtpt-AB-Szabo', 'mtpt-BA-Szabo']], axis=0)
+   matres = np.append(matres, [[str(ttaufold), str(ttauunfold), str(CorrectionFactor*ctAB), str(CorrectionFactor*cstdtAB), str(cnAB), str(CorrectionFactor*ctBA), str(CorrectionFactor*cstdtBA), str(cnBA), str(((CorrectionFactor*ctAB*cnAB+CorrectionFactor*ctBA*cnBA)/(cnAB+cnBA))), str((cnAB+cnBA)), str(CorrectionFactor*ctTPAB), str(CorrectionFactor*cstdtTPAB), str(CorrectionFactor*ctTPBA), str(CorrectionFactor*cstdtTPBA), str(ttTP), str(ttTPb)]], axis=0)
+
+   np.savetxt('mfpt-mtpt-' + filename + '.dat',matres,fmt='%s')
 
 
    return
