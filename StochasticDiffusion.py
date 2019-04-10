@@ -419,7 +419,7 @@ def main():
    G = G[~np.isinf(G).any(axis=1)]
    G = G[~np.isneginf(G).any(axis=1)]
    #print G
-   np.savetxt('GQ' + filename + '.dat',G)
+   np.savetxt('F_Stoch' + filename + '.dat',G)
 
 
    #Module to extract lines with errors
@@ -427,7 +427,7 @@ def main():
    vfilename=str('VQ' + filename + '.dat')
    freefilename=str('Free_energy_' + arg + '.dat')
    histfilename=str('hist_' + arg + '.dat')
-   helmfilename=str('GQ' + filename + '.dat')
+   helmfilename=str('F_Stoch' + filename + '.dat')
    fn=[diffusionfilename, vfilename, freefilename, histfilename, helmfilename] #Make a list with filenames
    CheckFiles(fn)
 
