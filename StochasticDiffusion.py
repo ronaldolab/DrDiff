@@ -29,6 +29,7 @@ import scipy as sc
 from itertools import islice
 from scipy import stats
 from scipy import integrate
+from scipy.signal import argrelmin
 import os
 
 ##################################################################################################
@@ -419,6 +420,13 @@ def main():
    G = G[~np.isinf(G).any(axis=1)]
    G = G[~np.isneginf(G).any(axis=1)]
    #print G
+
+
+   #Set minima related to folded state as zero
+   idmin = argrelmin(G[:,1])[-1][-1]
+   G[:,1] = G[:,1]-G[:,1][idmin]
+
+
    np.savetxt('F_Stoch' + filename + '.dat',G)
 
 
