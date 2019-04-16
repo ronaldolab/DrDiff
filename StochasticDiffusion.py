@@ -44,7 +44,10 @@ def Free_energy_Histogram_Q(filename,Qf,nbins):
    bins_center = (bins[:-1] + bins[1:])/2.0 ## Average of bins positions to plot
    #np.savetxt('hist_' + filename + '.dat',np.c_[bins_center,hist]) ## Write Histogram file
    FQ = -np.log(hist) ## Free Energy calculation
-   np.savetxt('Free_energy_' + filename + '.dat',np.c_[bins_center,FQ]) ## Write Free Energy file
+   Free = np.c_[bins_center,FQ]
+   id = argrelmin(Free[:,1])[-1][-1]
+   Free[:,1] = Free[:,1]-Free[:,1][id]
+   np.savetxt('Free_energy_' + filename + '.dat',Free) ## Write Free Energy file
    #print('Coordinate Histogram and Free Energy calculated')
    #print '################################################'
    return
