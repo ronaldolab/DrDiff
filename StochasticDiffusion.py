@@ -84,6 +84,17 @@ def CheckFiles(q):
 
 ##################################################################################################
 
+################################################################################
+# Function to exclude invalid values
+################################################################################
+
+def excludeinvalid(M):
+    M = M[~np.isnan(M).any(axis=1)]
+    M = M[~np.isinf(M).any(axis=1)]
+    M = M[~np.isneginf(M).any(axis=1)]
+    return M
+################################################################################
+
 
 ##################################################################################################
 # Function to calculate t_{folding} using Kramers equation
@@ -95,12 +106,8 @@ def calctau(beta,Qinit,Qzero,Qone,DQ,G):
     utau = 0
     DQ = np.asarray(DQ)
     G = np.asarray(G)
-    G = G[~np.isnan(G).any(axis=1)]
-    G = G[~np.isneginf(G).any(axis=1)]
-    G = G[~np.isinf(G).any(axis=1)]
-    DQ = DQ[~np.isnan(DQ).any(axis=1)]
-    DQ = DQ[~np.isneginf(DQ).any(axis=1)]
-    DQ = DQ[~np.isinf(DQ).any(axis=1)]
+    G = excludeinvalid(G)
+    DQ = excludeinvalid(DQ)
     tau = np.empty(shape=[0,2])
     taul = np.empty(shape=[0,2])
     idxzero = (np.abs(G[:,0]-Qzero)).argmin() #get index of Q value close to Qzero
@@ -130,14 +137,10 @@ def calctau(beta,Qinit,Qzero,Qone,DQ,G):
             else:
                 utau = 0
             tau = np.append(tau, [[Qk, utau]], axis=0)
-            tau = tau[~np.isnan(tau).any(axis=1)]
-            tau = tau[~np.isneginf(tau).any(axis=1)]
-            tau = tau[~np.isinf(tau).any(axis=1)]
+            tau = excludeinvalid(tau)
         inttau = integrate.cumtrapz(tau[:,1], tau[:,0], axis=0, initial=tau[0,1])[-1] #inner integral
         taul = np.append(taul, [[Qj, inttau]], axis=0)
-        taul = taul[~np.isnan(taul).any(axis=1)]
-        taul = taul[~np.isneginf(taul).any(axis=1)]
-        taul = taul[~np.isinf(taul).any(axis=1)]
+        taul = excludeinvalid(taul)
     inttaul = integrate.cumtrapz(taul[:,1], taul[:,0], axis=0, initial=taul[0,1])[-1] #outer integral
     return inttaul
 
@@ -198,12 +201,8 @@ def phi(beta,Qzero,Qone,DQ,G,qx):
 #
 ##################################################################################################
 def simpleint(calctest,funcion,beta,Qzero,Qone,G,DQ):
-    G = G[~np.isnan(G).any(axis=1)]
-    G = G[~np.isneginf(G).any(axis=1)]
-    G = G[~np.isinf(G).any(axis=1)]
-    DQ = DQ[~np.isnan(DQ).any(axis=1)]
-    DQ = DQ[~np.isneginf(DQ).any(axis=1)]
-    DQ = DQ[~np.isinf(DQ).any(axis=1)]
+    G = excludeinvalid(G)
+    DQ = excludeinvalid(DQ)
     sampledvalues = np.empty(shape=[0,2]) #initializing two column numpy array
     idxzero = (np.abs(G[:,0]-Qzero)).argmin() #get index of Q value close to Qzero
     idxone = (np.abs(G[:,0]-Qone)).argmin() #get index of Q value close to Qone
@@ -213,9 +212,7 @@ def simpleint(calctest,funcion,beta,Qzero,Qone,G,DQ):
         irow,icol = np.where(DQ == Qx)
         jrow,jcol = np.where(G == Qx)
         sampledvalues = np.append(sampledvalues, [[Qx,calctest(funcion,irow,jrow,G,DQ,beta,Qx,Qzero,Qone)]], axis=0)
-        sampledvalues = sampledvalues[~np.isnan(sampledvalues).any(axis=1)]
-        sampledvalues = sampledvalues[~np.isneginf(sampledvalues).any(axis=1)]
-        sampledvalues = sampledvalues[~np.isinf(sampledvalues).any(axis=1)]
+    sampledvalues = excludeinvalid(sampledvalues)
     return sampledvalues
 ##################################################################################################
 
@@ -400,10 +397,9 @@ def main():
 
    #to calculate F_{Stochastic}
    Z = np.stack((DQ[:,0],VQ[:,1]/DQ[:,1],DQ[:,2]+VQ[:,2]), axis=-1)
-   Z = Z[~np.isnan(Z).any(axis=1)]
-   Z = Z[~np.isinf(Z).any(axis=1)]
-   Z = Z[~np.isneginf(Z).any(axis=1)]
+   Z = excludeinvalid(Z)
    W = np.stack((Z[:,0],integrate.cumtrapz(Z[:,1], Z[:,0], initial=Z[:,1][0]),Z[:,2]), axis=-1)
+   W = excludeinvalid(W)
    G = np.empty(shape=[0,3])
    for Qi in DQ[:,0]:
        irow,icol = np.where(W == Qi)
@@ -416,9 +412,7 @@ def main():
            er = np.nan
        G = np.append(G,[[Qi,GQ,er]], axis=0)
 
-   G = G[~np.isnan(G).any(axis=1)]
-   G = G[~np.isinf(G).any(axis=1)]
-   G = G[~np.isneginf(G).any(axis=1)]
+   G = excludeinvalid(G)
    #print G
 
 
@@ -461,12 +455,12 @@ def main():
    print('Average mtpt measured using the trajectory between ' + str(Qqzero) + ' and ' + str(Qqone) + ' is ' + str(CorrectionFactor*ctTP) + ' with ' + str(cnTP) + ' transitions.' )
    print('mtpt calculated using Szabo equation for folding is ' + str(ttTP) + ' and for unfolding is '+ str(ttTPb) )
 
-   matres = np.empty(shape=[0,16])
+   matrix = np.empty(shape=[0,16])
 
-   matres = np.append(matres, [['#mfpt-AB-Kramers', 'mfpt-BA-Kramers', 'mfpt-AB-trajectory', 'std-AB-trajectory', 'nAB', 'mfpt-BA-trajectory', 'std-BA-trajectory', 'nBA', 'average-mfpt', 'total-transitions', 'mtpt-AB-trajectory', 'std-mtpt-AB-trajectory','mtpt-BA-trajectory', 'std-mtpt-BA-trajectory','mtpt-AB-Szabo', 'mtpt-BA-Szabo']], axis=0)
-   matres = np.append(matres, [[str(ttaufold), str(ttauunfold), str(CorrectionFactor*ctAB), str(CorrectionFactor*cstdtAB), str(cnAB), str(CorrectionFactor*ctBA), str(CorrectionFactor*cstdtBA), str(cnBA), str(((CorrectionFactor*ctAB*cnAB+CorrectionFactor*ctBA*cnBA)/(cnAB+cnBA))), str((cnAB+cnBA)), str(CorrectionFactor*ctTPAB), str(CorrectionFactor*cstdtTPAB), str(CorrectionFactor*ctTPBA), str(CorrectionFactor*cstdtTPBA), str(ttTP), str(ttTPb)]], axis=0)
+   matrix = np.append(matrix, [['#mfpt-AB-Kramers', 'mfpt-BA-Kramers', 'mfpt-AB-trajectory', 'std-AB-trajectory', 'nAB', 'mfpt-BA-trajectory', 'std-BA-trajectory', 'nBA', 'average-mfpt', 'total-transitions', 'mtpt-AB-trajectory', 'std-mtpt-AB-trajectory','mtpt-BA-trajectory', 'std-mtpt-BA-trajectory','mtpt-AB-Szabo', 'mtpt-BA-Szabo']], axis=0)
+   matrix = np.append(matrix, [[str(ttaufold), str(ttauunfold), str(CorrectionFactor*ctAB), str(CorrectionFactor*cstdtAB), str(cnAB), str(CorrectionFactor*ctBA), str(CorrectionFactor*cstdtBA), str(cnBA), str(((CorrectionFactor*ctAB*cnAB+CorrectionFactor*ctBA*cnBA)/(cnAB+cnBA))), str((cnAB+cnBA)), str(CorrectionFactor*ctTPAB), str(CorrectionFactor*cstdtTPAB), str(CorrectionFactor*ctTPBA), str(CorrectionFactor*cstdtTPBA), str(ttTP), str(ttTPb)]], axis=0)
 
-   np.savetxt('mfpt-mtpt-' + filename + '.dat',matres,fmt='%s')
+   np.savetxt('mfpt-mtpt-' + filename + '.dat',matrix,fmt='%s')
 
 
    return
