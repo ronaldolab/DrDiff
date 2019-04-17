@@ -30,6 +30,7 @@ from itertools import islice
 from scipy import stats
 from scipy import integrate
 from scipy.signal import argrelmin
+from scipy.signal import savgol_filter
 import os
 
 ##################################################################################################
@@ -44,8 +45,9 @@ def Free_energy_Histogram_Q(filename,Qf,nbins):
    bins_center = (bins[:-1] + bins[1:])/2.0 ## Average of bins positions to plot
    #np.savetxt('hist_' + filename + '.dat',np.c_[bins_center,hist]) ## Write Histogram file
    FQ = -np.log(hist) ## Free Energy calculation
+   FG = savgol_filter(FQ, 5, 3, mode='nearest')
    Free = np.c_[bins_center,FQ]
-   id = argrelmin(Free[:,1])[-1][-1]
+   id = argrelmin(FG)[-1][-1]
    Free[:,1] = Free[:,1]-Free[:,1][id]
    np.savetxt('Free_energy_' + filename + '.dat',Free) ## Write Free Energy file
    #print('Coordinate Histogram and Free Energy calculated')
@@ -418,9 +420,9 @@ def main():
    G = excludeinvalid(G)
    #print G
 
-
+   SG = savgol_filter(G[:,1], 5, 3, mode='nearest')
    #Set minima related to folded state as zero
-   idmin = argrelmin(G[:,1])[-1][-1]
+   idmin = argrelmin(SG)[-1][-1]
    G[:,1] = G[:,1]-G[:,1][idmin]
 
 
