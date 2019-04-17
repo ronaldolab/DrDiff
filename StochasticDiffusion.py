@@ -298,7 +298,7 @@ def calcttrajectory(Qzero,Qone,Qtr):
     stdtTPBA = np.nanstd(resultsTP2, axis=0)[3]
     nTP = (resultsTP0[(np.size(resultsTP0, axis=0)-1)][0])+(resultsTP2[(np.size(resultsTP2, axis=0)-1)][0])
     tTP = ((np.sum(resultsTP0, axis=0)[3])+(np.sum(resultsTP2, axis=0)[3]))/(nTP)
-    #np.savetxt('Results.dat',resultsAB) #to print results matrix in a file
+    #np.savetxt('Results.dat',resultsAB) #to print results matrixM in a file
     return tAB,tBA,nTPAB,tTPAB,nTPBA,tTPBA,nAB,nBA,nTP,tTP,stdtAB,stdtBA,stdtTPAB,stdtTPBA
 ##################################################################################################
 
@@ -460,12 +460,12 @@ def main():
    print('Average mtpt measured using the trajectory between ' + str(Qqzero) + ' and ' + str(Qqone) + ' is ' + str(CorrectionFactor*ctTP) + ' with ' + str(cnTP) + ' transitions.' )
    print('mtpt calculated using Szabo equation for folding is ' + str(ttTP) + ' and for unfolding is '+ str(ttTPb) )
 
-   matrix = np.empty(shape=[0,16])
+   matrixM = np.empty(shape=[0,16])
 
-   matrix = np.append(matrix, [['#mfpt-AB-Kramers', 'mfpt-BA-Kramers', 'mfpt-AB-trajectory', 'std-AB-trajectory', 'nAB', 'mfpt-BA-trajectory', 'std-BA-trajectory', 'nBA', 'average-mfpt', 'total-transitions', 'mtpt-AB-trajectory', 'std-mtpt-AB-trajectory','mtpt-BA-trajectory', 'std-mtpt-BA-trajectory','mtpt-AB-Szabo', 'mtpt-BA-Szabo']], axis=0)
-   matrix = np.append(matrix, [[str(ttaufold), str(ttauunfold), str(CorrectionFactor*ctAB), str(CorrectionFactor*cstdtAB), str(cnAB), str(CorrectionFactor*ctBA), str(CorrectionFactor*cstdtBA), str(cnBA), str(((CorrectionFactor*ctAB*cnAB+CorrectionFactor*ctBA*cnBA)/(cnAB+cnBA))), str((cnAB+cnBA)), str(CorrectionFactor*ctTPAB), str(CorrectionFactor*cstdtTPAB), str(CorrectionFactor*ctTPBA), str(CorrectionFactor*cstdtTPBA), str(ttTP), str(ttTPb)]], axis=0)
+   matrixM = np.append(matrixM, [['#mfpt-AB-Kramers', 'mfpt-BA-Kramers', 'mfpt-AB-trajectory', 'std-AB-trajectory', 'nAB', 'mfpt-BA-trajectory', 'std-BA-trajectory', 'nBA', 'average-mfpt', 'total-transitions', 'mtpt-AB-trajectory', 'std-mtpt-AB-trajectory','mtpt-BA-trajectory', 'std-mtpt-BA-trajectory','mtpt-AB-Szabo', 'mtpt-BA-Szabo']], axis=0)
+   matrixM = np.append(matrixM, [[str(ttaufold), str(ttauunfold), str(CorrectionFactor*ctAB), str(CorrectionFactor*cstdtAB), str(cnAB), str(CorrectionFactor*ctBA), str(CorrectionFactor*cstdtBA), str(cnBA), str(((CorrectionFactor*ctAB*cnAB+CorrectionFactor*ctBA*cnBA)/(cnAB+cnBA))), str((cnAB+cnBA)), str(CorrectionFactor*ctTPAB), str(CorrectionFactor*cstdtTPAB), str(CorrectionFactor*ctTPBA), str(CorrectionFactor*cstdtTPBA), str(ttTP), str(ttTPb)]], axis=0)
 
-   np.savetxt('mfpt-mtpt-' + filename + '.dat',matrix,fmt='%s')
+   np.savetxt('mfpt-mtpt-' + filename + '.dat',matrixM,fmt='%s')
 
 
    return
