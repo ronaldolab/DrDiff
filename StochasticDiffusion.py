@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #coding: utf8
-########################################################################
+################################################################################
 #
 # Calculate the Diffusion Coefficient (D(Q)) and the Free-Energy (G(Q))
 #   using the Stochastic Approach
@@ -19,7 +19,7 @@
 #
 # PS: Need to install some libraries: numpy, scipy and itertools
 #
-#######################################################################
+################################################################################
 
 import sys
 import numpy as np
@@ -33,10 +33,10 @@ from scipy.signal import argrelmin
 from scipy.signal import savgol_filter
 import os
 
-##################################################################################################
-# Function to print Free Energy and the Histogram to data file
-#   F(Q) = - np.log [number-of-states(Q)]
-##################################################################################################
+################################################################################
+# Function to print Free Energy and the Histogram to data file                 #
+#   F(Q) = - np.log [number-of-states(Q)]                                      #
+################################################################################
 def Free_energy_Histogram_Q(filename,Qf,nbins):
    #Histogram calculation
    #hist,bins=np.histogram(Qf[::1],int(np.ceil(np.max(Qf)/Qbins)),density=True) ##
@@ -51,26 +51,26 @@ def Free_energy_Histogram_Q(filename,Qf,nbins):
    Free[:,1] = Free[:,1]-Free[:,1][id]
    np.savetxt('Free_energy_' + filename + '.dat',Free) ## Write Free Energy file
    #print('Coordinate Histogram and Free Energy calculated')
-   #print '################################################'
+   #print('################################################')
    return
-##################################################################################################
+################################################################################
 
-##################################################################################################
-# Function to print Histogram of t stes to data file
-#
-##################################################################################################
+################################################################################
+# Function to print Histogram of t stes to data file                           #
+#                                                                              #
+################################################################################
 def Jump_Histogram(filename,Qf):
    hist,bins=np.histogram(Qf[::1],density=True) ## Histogram calculation
    bins_center = (bins[:-1] + bins[1:])/2.0 ## Average of bins positions to plot
    #np.savetxt('H_' + filename + '.dat',np.c_[bins_center,hist]) ## Write Histogram file
    return
-##################################################################################################
+################################################################################
 
 
-##################################################################################################
-# Function to check files output and delete lines with "nan" and "inf"
-#
-##################################################################################################
+################################################################################
+# Function to check files output and delete lines with "nan" and "inf"         #
+#                                                                              #
+################################################################################
 
 def CheckFiles(q):
     aw = os.listdir('.')
@@ -84,13 +84,14 @@ def CheckFiles(q):
                 ff.write(z)
         ff.truncate()
         ff.close()
-    print '################## CHECKED ########################'
+    print('################## CHECKED ########################')
     return
 
-##################################################################################################
+################################################################################
 
 ################################################################################
-# Function to exclude invalid values
+# Function to exclude invalid values                                           #
+#                                                                              #
 ################################################################################
 
 def excludeinvalid(M):
@@ -101,10 +102,25 @@ def excludeinvalid(M):
 ################################################################################
 
 
-##################################################################################################
-# Function to calculate t_{folding} using Kramers equation
-#
-##################################################################################################
+################################################################################
+# Function to calculate ptpx                                                   #
+#                                                                              #
+################################################################################
+
+def ptpx(beta,Qzero,Qone,DQ,G):
+    ptpxM = np.empty(shape=[0,2])
+    for x in DQ[:,0]:
+        if x >= Qzero and x <=Qone:
+            xphi = phi(beta,Qzero,Qone,DQ,G,x)
+            ptpxM = np.append(ptpxM, [[x, 2*xphi*(1-xphi)]], axis=0)
+    return ptpxM
+
+################################################################################
+
+################################################################################
+# Function to calculate t_{folding} using Kramers equation                     #
+#                                                                              #
+################################################################################
 
 def calctau(beta,Qinit,Qzero,Qone,DQ,G):
     atau = 0
@@ -149,14 +165,14 @@ def calctau(beta,Qinit,Qzero,Qone,DQ,G):
     inttaul = integrate.cumtrapz(taul[:,1], taul[:,0], axis=0, initial=taul[0,1])[-1] #outer integral
     return inttaul
 
-##################################################################################################
+################################################################################
 
 
 
-##################################################################################################
-# Function to calculate analytical mtpt
-#
-##################################################################################################
+################################################################################
+# Function to calculate analytical mtpt                                        #
+#                                                                              #
+################################################################################
 def calcmtpt(beta,Qzero,Qone,DQ,G):
     DQ = np.asarray(DQ)
     G = np.asarray(G)
@@ -168,28 +184,28 @@ def calcmtpt(beta,Qzero,Qone,DQ,G):
     intrintegral = integrate.cumtrapz(vrint[:,1], vrint[:,0], axis=0, initial=vrint[0,1])[-1] #right integral from Qunf to Qfold
     inttpt = intlintegral*intrintegral
     return inttpt
-##################################################################################################
+################################################################################
 
-##################################################################################################
-# Equation for mtpt - right integral
-#
-##################################################################################################
+################################################################################
+# Equation for mtpt - right integral                                           #
+#                                                                              #
+################################################################################
 def rcoreint(irow,jrow,G,DQ,beta,GQ1,Qx,Qzero,Qone):
     return ((np.exp(beta*(GQ1)))/(float(DQ[np.int(irow[0]),1]))) #calculating rintegral
 
 
-##################################################################################################
-# Equation for mtpt - left integral
-#
-##################################################################################################
+################################################################################
+# Equation for mtpt - left integral                                            #
+#                                                                              #
+################################################################################
 def lcoreint(irow,jrow,G,DQ,beta,GQ1,Qx,Qzero,Qone):
     xphi = phi(beta,Qzero,Qone,DQ,G,Qx)
     return (np.exp(-1*beta*(GQ1))*xphi*(1-xphi)) #calculating lintegral
 
-##################################################################################################
-# Function to \phi(x)
-#
-##################################################################################################
+################################################################################
+# Function to \phi(x)                                                          #
+#                                                                              #
+################################################################################
 def phi(beta,Qzero,Qone,DQ,G,qx):
     DQ = np.asarray(DQ)
     G = np.asarray(G)
@@ -199,12 +215,12 @@ def phi(beta,Qzero,Qone,DQ,G,qx):
     intupphi = integrate.cumtrapz(vupphi[:,1], vupphi[:,0], axis=0, initial=vupphi[0,1])[-1] #numerator integral from Qzero to Q
     phix = (intupphi/intlowphi)
     return phix
-##################################################################################################
+################################################################################
 
-##################################################################################################
-# Function to evaluate values to a simple integral
-#
-##################################################################################################
+################################################################################
+# Function to evaluate values to a simple integral                             #
+#                                                                              #
+################################################################################
 def simpleint(calctest,funcion,beta,Qzero,Qone,G,DQ):
     G = excludeinvalid(G)
     DQ = excludeinvalid(DQ)
@@ -219,20 +235,20 @@ def simpleint(calctest,funcion,beta,Qzero,Qone,G,DQ):
         sampledvalues = np.append(sampledvalues, [[Qx,calctest(funcion,irow,jrow,G,DQ,beta,Qx,Qzero,Qone)]], axis=0)
     sampledvalues = excludeinvalid(sampledvalues)
     return sampledvalues
-##################################################################################################
+################################################################################
 
-##################################################################################################
-# Function to calculate core of \phi(x) integral
-#
-##################################################################################################
+################################################################################
+# Function to calculate core of \phi(x) integral                               #
+#                                                                              #
+################################################################################
 def equationphi(irow,jrow,G,DQ,beta,GQ1,Qx,Qzero,Qone):
     return ((np.exp(beta*(GQ1)))/(float(DQ[np.int(irow[0]),1]))) #calculating phi core
-##################################################################################################
+################################################################################
 
-##################################################################################################
-# Test to avoid invalid values and evaluate the chosen equation
-#
-##################################################################################################
+################################################################################
+# Test to avoid invalid values and evaluate the chosen equation                #
+#                                                                              #
+################################################################################
 def testcalc(eq,irow,jrow,G,DQ,beta,Qx,Qzero,Qone):
     eval = 0
     if (np.size(irow) != 0 and np.size(jrow) != 0):
@@ -244,13 +260,13 @@ def testcalc(eq,irow,jrow,G,DQ,beta,Qx,Qzero,Qone):
     else:
         eval = 0
     return eval
-##################################################################################################
+################################################################################
 
 
-##################################################################################################
-# Function to calculate mfpt, mtpt and number of transitions from trajectory
-#
-##################################################################################################
+################################################################################
+# Function to calculate mfpt, mtpt and number of transitions from trajectory   #
+#                                                                              #
+################################################################################
 def calcttrajectory(Qzero,Qone,Qtr):
     tAB = tBA = tTP = nAB = nBA = t0  = t1 = t2 = 0
     resultsAB = np.empty(shape=[0,4])
@@ -285,8 +301,8 @@ def calcttrajectory(Qzero,Qone,Qtr):
             if Qtr[i+1] <= Qzero: s = 0
             elif Qtr[i+1] >= Qone: s = 2
     tAB = (np.sum(resultsAB, axis=0)[3])/nAB
-    #print tAB
-    #print np.nanmean(resultsAB, axis=0)[3]
+    #print(tAB)
+    #print(np.nanmean(resultsAB, axis=0)[3])
     stdtAB = np.nanstd(resultsAB, axis=0)[3]
     tBA = (np.sum(resultsBA, axis=0)[3])/nBA
     stdtBA = np.nanstd(resultsBA, axis=0)[3]
@@ -300,10 +316,10 @@ def calcttrajectory(Qzero,Qone,Qtr):
     tTP = ((np.sum(resultsTP0, axis=0)[3])+(np.sum(resultsTP2, axis=0)[3]))/(nTP)
     #np.savetxt('Results.dat',resultsAB) #to print results matrixM in a file
     return tAB,tBA,nTPAB,tTPAB,nTPBA,tTPBA,nAB,nBA,nTP,tTP,stdtAB,stdtBA,stdtTPAB,stdtTPBA
-##################################################################################################
+################################################################################
 
 
-##################################################################################################
+################################################################################
 ## Global variables declaration
 
 Eq=10 # Equilibration Steps - Value to ignore the first X numbers from the traj file
@@ -318,39 +334,41 @@ Q_zero = 80 # transition boundaries
 Q_one = 230
 
 
-#print '################################################'
-print 'Equilibration Steps =',Eq
-print 'Bin width read from trajectory =',Qbins
-print 'Time Step =',time_step
-print 'Snapshot =',Snapshot
-print 'tmax =',tmax,'| tmin =',tmin
-print 'beta =',beta
-print 'Transition state boundaries = ',Q_zero,' and ',Q_one
-#print '################################################'
+#print('################################################')
+print('Equilibration Steps =',Eq)
+print('Bin width read from trajectory =',Qbins)
+print('Time Step =',time_step)
+print('Snapshot =',Snapshot)
+print('tmax =',tmax,'| tmin =',tmin)
+print('beta =',beta)
+print('Transition state boundaries = ',Q_zero,' and ',Q_one)
+#print('################################################')
+
+################################################################################
 
 def main():
 
    if len(sys.argv) > 1: ## To open just if exist  file in argument
      arg = sys.argv[1]
    else:
-     print ('No trajectory file found - Please insert a trajectory file')
+     print('No trajectory file found - Please insert a trajectory file')
      sys.exit()
    try:
      f = open(arg, 'r')
    except (IOError) as errno:
-     print ('I/O error. %s' % errno)
+     print('I/O error. %s' % errno)
      sys.exit()
-   print 'Reading trajectory file'
-   #print '################################################'
+   print('Reading trajectory file')
+   #print('################################################')
    #Pbar = progressbar.ProgressBar(term_width=53,widgets=['Working: ',progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
    Q = np.asarray([float(line.rstrip()) for line in islice(f, Eq, None)]) # Save the coordinate value skipping the Equilibration steps
    Qmax = np.max(Q) # take the max and min value
    Qmin = np.min(Q)
-   print 'From trajectory file'
-   print 'Qmax =',Qmax,'| Qmin =',Qmin
-   print 'Mean(Q) =',np.mean(Q),'| Std(Q) =',np.std(Q)
-   print 'Std(Q)/Mean(Q) =',np.std(Q)/np.mean(Q)
-   #print '################################################'
+   print('From trajectory file')
+   print('Qmax =',Qmax,'| Qmin =',Qmin)
+   print('Mean(Q) =',np.mean(Q),'| Std(Q) =',np.std(Q))
+   print('Std(Q)/Mean(Q) =',np.std(Q)/np.mean(Q))
+   #print('################################################')
    nbins = np.int(np.ceil((Qmax-Qmin)/Qbins))
    Free_energy_Histogram_Q(arg,Q,nbins) ## Call function to Free Energy and Histogram
    DQ=[]
@@ -372,12 +390,12 @@ def main():
       #Pbar.update( (Qi-Qmin)*100/(Qmax-Qmin))
       #sleep(0.01)
       for t in range(tmin,tmax): # Loop of times for linear regression
-         #print Q_index+t,t,Q[Q_index]
+         #print(Q_index+t,t,Q[Q_index])
          y=Q[Q_index+t]
          ####################  Print Historgram Do not delete it #######################################
          Jump_Histogram(str(Qi) + '_' +str(t),y) ## Write Histograms with each t for each coordinate Qc
          ###############################################################################################
-         #print Qi,t,np.var(y),np.mean(y)
+         #print(Qi,t,np.var(y),np.mean(y))
          D.append([t,0.5*np.var(y)]) # Variance calculation - sigma^2
          V.append([t,np.mean(y)]) # Mean of histogram calculation - Qc
 
@@ -386,7 +404,7 @@ def main():
       DQ.append([Qi,sloped/CorrectionFactor,std_errd]) # Save Diffusion for each coordinate value
       VQ.append([Qi,slopev/CorrectionFactor,std_errv]) # Save Drift for each coordinate value
    #Pbar.finish()
-   print '################## DONE ########################'
+   print('################## DONE ########################')
    # np.savetxt('DQ.dat',DQ) # Save to file
    # np.savetxt('VQ.dat',VQ)
    # name for files
@@ -398,7 +416,7 @@ def main():
    np.savetxt('DQ' + filename + '.dat',DQ) # Save to file
    np.savetxt('VQ' + filename + '.dat',VQ)
 
-   #print VQ
+   #print(VQ)
 
    #to calculate F_{Stochastic}
    Z = np.stack((DQ[:,0],VQ[:,1]/DQ[:,1],DQ[:,2]+VQ[:,2]), axis=-1)
@@ -418,7 +436,7 @@ def main():
        G = np.append(G,[[Qi,GQ,er]], axis=0)
 
    G = excludeinvalid(G)
-   #print G
+   #print(G)
 
    SG = savgol_filter(G[:,1], 5, 3, mode='nearest')
    #Set minima related to folded state as zero
@@ -447,6 +465,9 @@ def main():
    ttauunfold = calctau(beta,Qmax,Qqone,Qqzero,DQ,G)
    ttTP = calcmtpt(beta,Qqzero,Qqone,DQ,G)
    ttTPb = calcmtpt(beta,Qqone,Qqzero,DQ,G)
+
+
+   np.savetxt('pTPx_' + filename + '.dat',ptpx(beta,Qqzero,Qqone,DQ,G))
 
    ctAB,ctBA,cnTPAB,ctTPAB,cnTPBA,ctTPBA,cnAB,cnBA,cnTP,ctTP,cstdtAB,cstdtBA,cstdtTPAB,cstdtTPBA = calcttrajectory(Qqzero,Qqone,Q)
 
