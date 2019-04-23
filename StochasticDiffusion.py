@@ -323,25 +323,25 @@ def calcttrajectory(Qzero, Qone, Qtr):
 ################################################################################
 ## Global variables declaration
 
-EQ=10 # Equilibration Steps - Value to ignore the first X numbers from the traj file
-Qbins=1 # Estimated bin width used to analyze the trajectory
-tmax=6 # Default 6
-tmin=2 # Default 2
-time_step=0.0005 # time step value used to save the trajectory file - Default 0.001
-Snapshot=50 # Snapshots from simulation
+EQ = 10 # Equilibration Steps - Value to ignore the first X numbers from the traj file
+Qbins = 1 # Estimated bin width used to analyze the trajectory
+tmax = 6 # Default 6
+tmin = 2 # Default 2
+time_step = 0.0005 # time step value used to save the trajectory file - Default 0.001
+Snapshot = 50 # Snapshots from simulation
 CorrectionFactor = time_step*Snapshot
-beta=1 # beta is 1/k_B*T
+beta = 1 # beta is 1/k_B*T
 Q_zero = 80 # transition boundaries
 Q_one = 230
 
 
 #print('################################################')
-print('Equilibration Steps =', EQ)
-print('Bin width read from trajectory =', Qbins)
-print('Time Step =', time_step)
-print('Snapshot =', Snapshot)
-print('tmax =', tmax, '| tmin =', tmin)
-print('beta =', beta)
+print('Equilibration Steps = ', EQ)
+print('Bin width read from trajectory = ', Qbins)
+print('Time Step = ', time_step)
+print('Snapshot = ', Snapshot)
+print('tmax = ', tmax, '| tmin = ', tmin)
+print('beta = ', beta)
 print('Transition state boundaries = ', Q_zero, ' and ', Q_one)
 #print('################################################')
 
@@ -460,7 +460,7 @@ def main():
     Qqzero = Q_zero
     Qqone = Q_one
 
-    if Qqzero>Qqone:Qqzero, Qqone=Qqone, Qqzero # Must be Qqzero < Qqone
+    if Qqzero>Qqone: Qqzero, Qqone=Qqone, Qqzero # Must be Qqzero < Qqone
 
     ttaufold = calctau(beta, Qmin, Qqzero, Qqone, DQ, G)
     ttauunfold = calctau(beta, Qmax, Qqone, Qqzero, DQ, G)
