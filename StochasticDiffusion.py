@@ -41,15 +41,15 @@ from scipy.signal import savgol_filter
 def Free_energy_Histogram_Q(filename, Qf, nbins):
     #Histogram calculation
     #hist, bins=np.histogram(Qf[::1], int(np.ceil(np.max(Qf)/Qbins)), density=True) ##
-    hist, bins=np.histogram(Qf[::1], nbins, density=True) ##
+    hist,bins = np.histogram(Qf[::1], nbins, density=True) ##
     #hist, bins=np.histogram(Qf[::1], 28, density=True)
     bins_center = (bins[:-1] + bins[1:])/2.0 ## Average of bins positions to plot
     #np.savetxt('hist_' + filename + '.dat', np.c_[bins_center, hist]) ## Write Histogram file
-    FQ = -np.log(hist) ## Free Energy calculation
+    FQ = -1*np.log(hist) ## Free Energy calculation
     FG = savgol_filter(FQ, 5, 3, mode='nearest')
     Free = np.c_[bins_center, FQ]
     id = argrelmin(FG)[-1][-1]
-    Free[:, 1] = Free[:, 1]-Free[:, 1][id]
+    Free[:,1] = Free[:,1]-Free[:,1][id]
     np.savetxt('Free_energy_' + filename + '.dat', Free) ## Write Free Energy file
     #print('Coordinate Histogram and Free Energy calculated')
     #print('################################################')
@@ -61,7 +61,7 @@ def Free_energy_Histogram_Q(filename, Qf, nbins):
 #                                                                              #
 ################################################################################
 def Jump_Histogram(filename, Qf):
-    hist, bins=np.histogram(Qf[::1], density=True) ## Histogram calculation
+    hist, bins = np.histogram(Qf[::1], density=True) ## Histogram calculation
     bins_center = (bins[:-1] + bins[1:])/2.0 ## Average of bins positions to plot
     #np.savetxt('H_' + filename + '.dat', np.c_[bins_center, hist]) ## Write Histogram file
     return
@@ -109,8 +109,8 @@ def excludeinvalid(M):
 ################################################################################
 
 def ptpx(beta, Qzero, Qone, DQ, G):
-    ptpxM = np.empty(shape=[0, 2])
-    for x in DQ[:, 0]:
+    ptpxM = np.empty(shape=[0,2])
+    for x in DQ[:,0]:
         if x >= Qzero and x <=Qone:
             xphi = phi(beta, Qzero, Qone, DQ, G, x)
             ptpxM = np.append(ptpxM, [[x, 2*xphi*(1-xphi)]], axis=0)
@@ -130,21 +130,21 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
     G = np.asarray(G)
     G = excludeinvalid(G)
     DQ = excludeinvalid(DQ)
-    tau = np.empty(shape=[0, 2])
-    taul = np.empty(shape=[0, 2])
-    idxzero = (np.abs(G[:, 0]-Qzero)).argmin() #get index of Q value close to Qzero
-    idxone = (np.abs(G[:, 0]-Qone)).argmin() #get index of Q value close to Qone
+    tau = np.empty(shape=[0,2])
+    taul = np.empty(shape=[0,2])
+    idxzero = (np.abs(G[:,0]-Qzero)).argmin() #get index of Q value close to Qzero
+    idxone = (np.abs(G[:,0]-Qone)).argmin() #get index of Q value close to Qone
     if Qzero < Qone: x=1
     else: x=-1
-    for Qj in G[:, 0][idxzero:idxone+x:x]: #summing from Qzero to Qone
+    for Qj in G[:,0][idxzero:idxone+x:x]: #summing from Qzero to Qone
         irow, icol = np.where(DQ == Qj)
         jrow, jcol = np.where(G == Qj)
-        tau = np.empty(shape=[0, 2])
-        idxinit = (np.abs(G[:, 0]-Qinit)).argmin()
-        idxj = (np.abs(G[:, 0]-Qj)).argmin()
+        tau = np.empty(shape=[0,2])
+        idxinit = (np.abs(G[:,0]-Qinit)).argmin()
+        idxj = (np.abs(G[:,0]-Qj)).argmin()
         if Qinit < Qj: y=1
         else: y=-1
-        for Qk in G[:, 0][idxinit:idxj+y:y]: #summing from Qinit to Qj
+        for Qk in G[:,0][idxinit:idxj+y:y]: #summing from Qinit to Qj
             krow, kcol = np.where(G == Qk)
             if (np.size(irow) != 0 and np.size(jrow) != 0 and np.size(krow) != 0):
                 if not ((abs(float(G[np.int(jrow[0]), 1])) >= (abs(np.nanmean(G, axis=0)[1])+abs(3*np.nanstd(G, axis=0)[1]))) or (abs(float(G[np.int(jrow[0]), 1])) <= (abs(np.nanmean(G, axis=0)[1])-abs(3*np.nanstd(G, axis=0)[1])))):
@@ -160,10 +160,10 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
                 utau = 0
             tau = np.append(tau, [[Qk, utau]], axis=0)
             tau = excludeinvalid(tau)
-        inttau = integrate.cumtrapz(tau[:, 1], tau[:, 0], axis=0, initial=tau[0, 1])[-1] #inner integral
+        inttau = integrate.cumtrapz(tau[:,1], tau[:,0], axis=0, initial=tau[0,1])[-1] #inner integral
         taul = np.append(taul, [[Qj, inttau]], axis=0)
         taul = excludeinvalid(taul)
-    inttaul = integrate.cumtrapz(taul[:, 1], taul[:, 0], axis=0, initial=taul[0, 1])[-1] #outer integral
+    inttaul = integrate.cumtrapz(taul[:,1], taul[:,0], axis=0, initial=taul[0,1])[-1] #outer integral
     return inttaul
 
 ################################################################################
@@ -179,10 +179,10 @@ def calcmtpt(beta, Qzero, Qone, DQ, G):
     G = np.asarray(G)
     #left part of the integral
     vlint = simpleint(testcalc, lcoreint, beta, Qzero, Qone, G, DQ)
-    intlintegral = integrate.cumtrapz(vlint[:, 1], vlint[:, 0], axis=0, initial=vlint[0, 1])[-1] #left integral from Qunf to Qfold
+    intlintegral = integrate.cumtrapz(vlint[:,1], vlint[:,0], axis=0, initial=vlint[0,1])[-1] #left integral from Qunf to Qfold
     #right part of integral
     vrint = simpleint(testcalc, rcoreint, beta, Qzero, Qone, G, DQ)
-    intrintegral = integrate.cumtrapz(vrint[:, 1], vrint[:, 0], axis=0, initial=vrint[0, 1])[-1] #right integral from Qunf to Qfold
+    intrintegral = integrate.cumtrapz(vrint[:,1], vrint[:,0], axis=0, initial=vrint[0,1])[-1] #right integral from Qunf to Qfold
     inttpt = intlintegral*intrintegral
     return inttpt
 ################################################################################
@@ -211,9 +211,9 @@ def phi(beta, Qzero, Qone, DQ, G, qx):
     DQ = np.asarray(DQ)
     G = np.asarray(G)
     vlowphi = simpleint(testcalc, equationphi, beta, Qzero, Qone, G, DQ)
-    intlowphi = integrate.cumtrapz(vlowphi[:, 1], vlowphi[:, 0], axis=0, initial=vlowphi[0, 1])[-1] #denominator integral from Qzero to Qone
+    intlowphi = integrate.cumtrapz(vlowphi[:,1], vlowphi[:,0], axis=0, initial=vlowphi[0,1])[-1] #denominator integral from Qzero to Qone
     vupphi =  simpleint(testcalc, equationphi, beta, Qzero, qx, G, DQ)
-    intupphi = integrate.cumtrapz(vupphi[:, 1], vupphi[:, 0], axis=0, initial=vupphi[0, 1])[-1] #numerator integral from Qzero to Q
+    intupphi = integrate.cumtrapz(vupphi[:,1], vupphi[:,0], axis=0, initial=vupphi[0,1])[-1] #numerator integral from Qzero to Q
     phix = (intupphi/intlowphi)
     return phix
 ################################################################################
@@ -225,12 +225,12 @@ def phi(beta, Qzero, Qone, DQ, G, qx):
 def simpleint(calctest, funcion, beta, Qzero, Qone, G, DQ):
     G = excludeinvalid(G)
     DQ = excludeinvalid(DQ)
-    sampledvalues = np.empty(shape=[0, 2]) #initializing two column numpy array
-    idxzero = (np.abs(G[:, 0]-Qzero)).argmin() #get index of Q value close to Qzero
-    idxone = (np.abs(G[:, 0]-Qone)).argmin() #get index of Q value close to Qone
+    sampledvalues = np.empty(shape=[0,2]) #initializing two column numpy array
+    idxzero = (np.abs(G[:,0]-Qzero)).argmin() #get index of Q value close to Qzero
+    idxone = (np.abs(G[:,0]-Qone)).argmin() #get index of Q value close to Qone
     if Qzero < Qone: x=1
     else: x=-1
-    for Qx in G[:, 0][idxzero:idxone+x:x]:  #summing from Qzero to Qone
+    for Qx in G[:,0][idxzero:idxone+x:x]:  #summing from Qzero to Qone
         irow, icol = np.where(DQ == Qx)
         jrow, jcol = np.where(G == Qx)
         sampledvalues = np.append(sampledvalues, [[Qx, calctest(funcion, irow, jrow, G, DQ, beta, Qx, Qzero, Qone)]], axis=0)
@@ -270,10 +270,10 @@ def testcalc(eq, irow, jrow, G, DQ, beta, Qx, Qzero, Qone):
 ################################################################################
 def calcttrajectory(Qzero, Qone, Qtr):
     tAB = tBA = tTP = nAB = nBA = t0  = t1 = t2 = 0
-    resultsAB = np.empty(shape=[0, 4])
-    resultsBA = np.empty(shape=[0, 4])
-    resultsTP0 = np.empty(shape=[0, 4])
-    resultsTP2 = np.empty(shape=[0, 4])
+    resultsAB = np.empty(shape=[0,4])
+    resultsBA = np.empty(shape=[0,4])
+    resultsTP0 = np.empty(shape=[0,4])
+    resultsTP2 = np.empty(shape=[0,4])
     if Qtr[0] <= Qzero: s = 0 #Defines initial state. A is s==0
     elif Qtr[0] >= Qone: s = 2 #B is s==2
     else: s = 1 # transition state
@@ -420,17 +420,17 @@ def main():
     #print(VQ)
 
     #to calculate F_{Stochastic}
-    Z = np.stack((DQ[:, 0], VQ[:, 1]/DQ[:, 1], DQ[:, 2]+VQ[:, 2]), axis=-1)
+    Z = np.stack((DQ[:,0], VQ[:,1]/DQ[:,1], DQ[:,2]+VQ[:,2]), axis=-1)
     Z = excludeinvalid(Z)
-    W = np.stack((Z[:, 0], integrate.cumtrapz(Z[:, 1], Z[:, 0], initial=Z[:, 1][0]), Z[:, 2]), axis=-1)
+    W = np.stack((Z[:,0], integrate.cumtrapz(Z[:,1], Z[:,0], initial=Z[:,1][0]), Z[:,2]), axis=-1)
     W = excludeinvalid(W)
-    G = np.empty(shape=[0, 3])
-    for Qi in DQ[:, 0]:
+    G = np.empty(shape=[0,3])
+    for Qi in DQ[:,0]:
         irow, icol = np.where(W == Qi)
         jrow, jcol = np.where(DQ == Qi)
         if (np.size(irow) != 0 and np.size(jrow) != 0):
             GQ = -(float(W[np.int(irow[0]), 1]))+np.log(float(DQ[np.int(jrow[0]), 1]))
-            er = W[:, 2][np.int(irow[0])]
+            er = W[:,2][np.int(irow[0])]
         else:
             GQ = np.nan
             er = np.nan
@@ -439,10 +439,10 @@ def main():
     G = excludeinvalid(G)
     #print(G)
 
-    SG = savgol_filter(G[:, 1], 7, 3, mode='nearest')
+    SG = savgol_filter(G[:,1], 7, 3, mode='nearest')
     #Set minima related to folded state as zero
     idmin = argrelmin(SG)[-1][-1]
-    G[:, 1] = G[:, 1]-G[:, 1][idmin]
+    G[:,1] = G[:,1]-G[:,1][idmin]
 
 
     np.savetxt('F_Stoch' + filename + '.dat', G)
@@ -482,7 +482,7 @@ def main():
     print('Average mtpt measured using the trajectory between ' + str(Qqzero) + ' and ' + str(Qqone) + ' is ' + str(CorrectionFactor*ctTP) + ' with ' + str(cnTP) + ' transitions.')
     print('mtpt calculated using Szabo equation for folding is ' + str(ttTP) + ' and for unfolding is '+ str(ttTPb))
 
-    matrix_m = np.empty(shape=[0, 16])
+    matrix_m = np.empty(shape=[0,16])
 
     matrix_m = np.append( matrix_m, [['#mfpt-AB-Kramers', 'mfpt-BA-Kramers', 'mfpt-AB-trajectory', 'std-AB-trajectory', 'nAB', 'mfpt-BA-trajectory', 'std-BA-trajectory', 'nBA', 'average-mfpt', 'total-transitions', 'mtpt-AB-trajectory', 'std-mtpt-AB-trajectory', 'mtpt-BA-trajectory', 'std-mtpt-BA-trajectory', 'mtpt-AB-Szabo', 'mtpt-BA-Szabo']], axis=0)
     matrix_m = np.append( matrix_m, [[str(ttaufold), str(ttauunfold), str(CorrectionFactor*ctAB), str(CorrectionFactor*cstdtAB), str(cnAB), str(CorrectionFactor*ctBA), str(CorrectionFactor*cstdtBA), str(cnBA), str(((CorrectionFactor*ctAB*cnAB+CorrectionFactor*ctBA*cnBA)/(cnAB+cnBA))), str((cnAB+cnBA)), str(CorrectionFactor*ctTPAB), str(CorrectionFactor*cstdtTPAB), str(CorrectionFactor*ctTPBA), str(CorrectionFactor*cstdtTPBA), str(ttTP), str(ttTPb)]], axis=0)
