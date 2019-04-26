@@ -24,6 +24,7 @@
 import sys
 import os
 from itertools import islice
+import concurrent.futures
 import numpy as np
 #import scipy as sc
 #import progressbar
@@ -278,30 +279,31 @@ def calcttrajectory(Qzero, Qone, Qtr):
     if Qtr[0] <= Qzero: s = 0 #Defines initial state. A is s==0
     elif Qtr[0] >= Qone: s = 2 #B is s==2
     else: s = 1 # transition state
-    for i in range(np.size(Qtr)):
-        if s == 0:
-            if Qtr[i] <= Qzero: t1 = i+1 #identify last time when Q is lower than Q0
-            if Qtr[i] >= Qone: #identify when Q is greater than Q1
-                t2 = i+1
-                nAB = nAB + 1 #count a transition
-                s = 2
-                resultsAB = np.append(resultsAB, [[nAB, t0, t1, (t2-t0)]], axis=0) #add results in a row
-                resultsTP0 = np.append(resultsTP0, [[nAB, t1, t2, (t2-t1)]], axis=0)
-                t0 = t2
-                t1 = t2
-        elif s == 2:
-            if Qtr[i] >= Qone: t1 = i+1 #identify last time when Q is greater than Q1
-            if Qtr[i] <= Qzero: #identify when Q is lower than Q0
-                t2 = i+1
-                nBA = nBA +1 #count a transition
-                s = 0
-                resultsBA = np.append(resultsBA, [[nBA, t0, t1, (t2-t0)]], axis=0)
-                resultsTP2 = np.append(resultsTP2, [[nBA, t1, t2, (t2-t1)]], axis=0)
-                t0 = t2
-                t1 = t2
-        elif s == 1:
-            if Qtr[i+1] <= Qzero: s = 0
-            elif Qtr[i+1] >= Qone: s = 2
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        for i in range(np.size(Qtr)):
+            if s == 0:
+                if Qtr[i] <= Qzero: t1 = i+1 #identify last time when Q is lower than Q0
+                if Qtr[i] >= Qone: #identify when Q is greater than Q1
+                    t2 = i+1
+                    nAB = nAB + 1 #count a transition
+                    s = 2
+                    resultsAB = np.append(resultsAB, [[nAB, t0, t1, (t2-t0)]], axis=0) #add results in a row
+                    resultsTP0 = np.append(resultsTP0, [[nAB, t1, t2, (t2-t1)]], axis=0)
+                    t0 = t2
+                    t1 = t2
+            elif s == 2:
+                if Qtr[i] >= Qone: t1 = i+1 #identify last time when Q is greater than Q1
+                if Qtr[i] <= Qzero: #identify when Q is lower than Q0
+                    t2 = i+1
+                    nBA = nBA +1 #count a transition
+                    s = 0
+                    resultsBA = np.append(resultsBA, [[nBA, t0, t1, (t2-t0)]], axis=0)
+                    resultsTP2 = np.append(resultsTP2, [[nBA, t1, t2, (t2-t1)]], axis=0)
+                    t0 = t2
+                    t1 = t2
+            elif s == 1:
+                if Qtr[i+1] <= Qzero: s = 0
+                elif Qtr[i+1] >= Qone: s = 2
     tAB = (np.sum(resultsAB, axis=0)[3])/nAB
     #print(tAB)
     #print(np.nanmean(resultsAB, axis=0)[3])
