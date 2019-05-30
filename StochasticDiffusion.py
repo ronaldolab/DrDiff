@@ -105,6 +105,21 @@ def excludeinvalid(M):
 
 
 ################################################################################
+# Function to calculate ptpx                                                   #
+#                                                                              #
+################################################################################
+
+def ptpx(beta, Qzero, Qone, DQ, G):
+    ptpxM = np.empty(shape=[0,2])
+    for x in DQ[:,0]:
+        if x >= Qzero and x <=Qone:
+            xphi = phi(beta, Qzero, Qone, DQ, G, x)
+            ptpxM = np.append(ptpxM, [[x, 2*xphi*(1-xphi)]], axis=0)
+    return ptpxM
+
+################################################################################
+
+################################################################################
 # Function to calculate t_{folding} using Kramers equation                     #
 #                                                                              #
 ################################################################################
@@ -453,6 +468,8 @@ def main():
     ttTP = calcmtpt(beta, Qqzero, Qqone, DQ, G)
     ttTPb = calcmtpt(beta, Qqone, Qqzero, DQ, G)
 
+
+    np.savetxt('pTPx_' + filename + '.dat', ptpx(beta, Qqzero, Qqone, DQ, G))
 
     ctAB, ctBA, cnTPAB, ctTPAB, cnTPBA, ctTPBA, cnAB, cnBA, cnTP, ctTP, cstdtAB, cstdtBA, cstdtTPAB, cstdtTPBA = calcttrajectory(Qqzero, Qqone, Q)
 
