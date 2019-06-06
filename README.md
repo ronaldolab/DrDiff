@@ -8,6 +8,8 @@ https://aip.scitation.org/doi/10.1063/1.5052142
 
 Stochastic drift-diffusion (DrDiff) framework determines kinetics and thermodynamics of two-state protein folding trajectory. Frederico Campos Freitas, Angelica Nakagawa Lima, Vinicius de Godoi Contessoto, Paul C. Whitford and Ronaldo Junio de Oliveira. <i> Manuscript submited. </i>
 
-![Snapshot with transitions between two states, alongside the D(Q), F(Q) and v(Q) for prion protein (PrP) analysis.](https://github.com/ronaldolab/DrDiff/blob/master/figures/Part_Traj_F_D_Drift_x_v4.png)
+### Snapshot with transitions between two states, alongside the D(Q), F(Q) and v(Q) for prion protein (PrP) analysis.
+![Snapshot with transitions between two states, alongside the D(Q), F(Q) and v(Q) for prion protein (PrP) analysis.](https://github.com/ronaldolab/DrDiff/blob/master/figures/Prion_Traj_F_D_D02_v4.png)
 
+### Fist passage and transition path times analyzes.
 ![Fist passage and transition path times analyzes.](https://github.com/ronaldolab/DrDiff/blob/master/figures/Prion_tau_f_tp2_v7.png)
