@@ -32,6 +32,10 @@ from scipy import stats
 from scipy import integrate
 from scipy.signal import argrelmin
 from scipy.signal import savgol_filter
+from uncertainties import ufloat
+from uncertainties.umath import *
+from uncertainties import unumpy as unp
+
 
 
 
@@ -403,8 +407,8 @@ def main():
 
         sloped, interceptd, r_valued, p_valued, std_errd = stats.linregress(D) # Linear regression - sloped is the difusion
         slopev, interceptv, r_valuev, p_valuev, std_errv = stats.linregress(V) # Linear regression - slopev is the drift
-        DQ.append([Qi, sloped/CorrectionFactor, std_errd]) # Save Diffusion for each coordinate value
-        VQ.append([Qi, slopev/CorrectionFactor, std_errv]) # Save Drift for each coordinate value
+        DQ.append([Qi, ufloat(sloped/CorrectionFactor, std_errd)]) # Save Diffusion for each coordinate value
+        VQ.append([Qi, ufloat(slopev/CorrectionFactor, std_errv)]) # Save Drift for each coordinate value
     #Pbar.finish()
     print('################## DONE ########################')
     # np.savetxt('DQ.dat', DQ) # Save to file
@@ -415,27 +419,28 @@ def main():
     DQ = np.asarray(DQ)
     VQ = np.asarray(VQ)
 
-    np.savetxt('DQ' + filename + '.dat', DQ) # Save to file
-    np.savetxt('VQ' + filename + '.dat', VQ)
+    np.savetxt('DQ' + filename + '.dat', DQ, fmt='%r') # Save to file
+    np.savetxt('VQ' + filename + '.dat', VQ, fmt='%r')
 
     #print(VQ)
 
     #to calculate F_{Stochastic}
-    Z = np.stack((DQ[:,0], VQ[:,1]/DQ[:,1], DQ[:,2]+VQ[:,2]), axis=-1)
+    Z = np.stack((DQ[:,0], VQ[:,1]/DQ[:,1]), axis=-1)
     Z = excludeinvalid(Z)
     W = np.stack((Z[:,0], integrate.cumtrapz(Z[:,1], Z[:,0], initial=Z[:,1][0]), Z[:,2]), axis=-1)
     W = excludeinvalid(W)
-    G = np.empty(shape=[0,3])
+    G = np.empty(shape=[0,2])
     for Qi in DQ[:,0]:
         irow, icol = np.where(W == Qi)
         jrow, jcol = np.where(DQ == Qi)
         if (np.size(irow) != 0 and np.size(jrow) != 0):
-            GQ = -(float(W[np.int(irow[0]), 1]))+np.log(float(DQ[np.int(jrow[0]), 1]))
-            er = W[:,2][np.int(irow[0])]
+            GQ = -(ufloat(W[np.int(irow[0]), 1]))+unp.log(ufloat(DQ[np.int(jrow[0]), 1]))
+            #er = W[:,2][np.int(irow[0])] #unnecessary using uncertainties package
         else:
             GQ = np.nan
             er = np.nan
-        G = np.append(G, [[Qi, GQ, er]], axis=0)
+        #G = np.append(G, [[Qi, GQ, er]], axis=0) #old
+        G = np.append(G, [[Qi, GQ]], axis=0)
 
     G = excludeinvalid(G)
     #print(G)
@@ -446,7 +451,7 @@ def main():
     G[:,1] = G[:,1]-G[:,1][idmin]
 
 
-    np.savetxt('F_Stoch' + filename + '.dat', G)
+    np.savetxt('F_Stoch' + filename + '.dat', G, fmt='%r')
 
 
     #Module to extract lines with errors
