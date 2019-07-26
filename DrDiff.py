@@ -131,8 +131,8 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
     G = np.asarray(G)
     G = excludeinvalid(G)
     DQ = excludeinvalid(DQ)
-    tau = np.empty(shape=[0,2])
-    taul = np.empty(shape=[0,2])
+    tau = np.empty(shape=[0,3])
+    taul = np.empty(shape=[0,3])
     idxzero = (np.abs(G[:,0]-Qzero)).argmin() #get index of Q value close to Qzero
     idxone = (np.abs(G[:,0]-Qone)).argmin() #get index of Q value close to Qone
     if Qzero < Qone: x=1
@@ -140,7 +140,7 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
     for Qj in G[:,0][idxzero:idxone+x:x]: #summing from Qzero to Qone
         irow, icol = np.where(DQ == Qj)
         jrow, jcol = np.where(G == Qj)
-        tau = np.empty(shape=[0,2])
+        tau = np.empty(shape=[0,3])
         idxinit = (np.abs(G[:,0]-Qinit)).argmin()
         idxj = (np.abs(G[:,0]-Qj)).argmin()
         if Qinit < Qj: y=1
@@ -150,25 +150,33 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
             if (np.size(irow) != 0 and np.size(jrow) != 0 and np.size(krow) != 0):
                 if not ((abs(float(G[np.int(jrow[0]), 1])) >= (abs(np.nanmean(G, axis=0)[1])+abs(3*np.nanstd(G, axis=0)[1]))) or (abs(float(G[np.int(jrow[0]), 1])) <= (abs(np.nanmean(G, axis=0)[1])-abs(3*np.nanstd(G, axis=0)[1])))):
                     GQ1 = (float(G[np.int(jrow[0]), 1]))
+                    err1 = (float(G[np.int(jrow[0]), 2]))
                 else:
                     GQ1 = np.nan
+                    err1 = np.nan
                 if not ((abs(float(G[np.int(krow[0]), 1])) >= (abs(np.nanmean(G, axis=0)[1])+abs(3*np.nanstd(G, axis=0)[1]))) or (abs(float(G[np.int(krow[0]), 1])) <= (abs(np.nanmean(G, axis=0)[1])-abs(3*np.nanstd(G, axis=0)[1])))):
                     GQ2 = (float(G[np.int(krow[0]), 1]))
+                    err2 = (float(G[np.int(krow[0]), 2]))
                 else:
                     GQ2 = np.nan
+                    err2 = np.nan
                 utau = ((np.exp(beta*(GQ1-GQ2)))/(float(DQ[np.int(irow[0]), 1]))) #calculating t_folding/unfolding
+                errutau = np.sqrt(np.square((np.exp(beta*(GQ1-GQ2)))*(np.sqrt(np.square(err1)+np.square(err2))))+np.square(float(DQ[np.int(irow[0]), 2])))
             else:
                 utau = 0
-            tau = np.append(tau, [[Qk, utau]], axis=0)
+            tau = np.append(tau, [[Qk, utau, errutau]], axis=0)
             tau = excludeinvalid(tau)
+            #print(tau)
         inttau = integrate.cumtrapz(tau[:,1], tau[:,0], axis=0, initial=tau[0,1])[-1] #inner integral
-        taul = np.append(taul, [[Qj, inttau]], axis=0)
+        errtau = np.sqrt(np.sum(np.square(tau[:,2]), axis=0)) #estimating error in inner integral
+        #print('Number of lines of taul: ' + str(np.amax(tau[:,2])))
+        taul = np.append(taul, [[Qj, inttau, errtau]], axis=0)
         taul = excludeinvalid(taul)
     inttaul = integrate.cumtrapz(taul[:,1], taul[:,0], axis=0, initial=taul[0,1])[-1] #outer integral
-    return inttaul
+    errttaul = np.sqrt(np.sum(np.square(taul[:,2]), axis=0)) #estimating error in outer integral
+    return inttaul, errttaul
 
 ################################################################################
-
 
 
 ################################################################################
@@ -421,7 +429,7 @@ def main():
     #print(VQ)
 
     #to calculate F_{Stochastic}
-    Z = np.stack((DQ[:,0], VQ[:,1]/DQ[:,1], DQ[:,2]+VQ[:,2]), axis=-1)
+    Z = np.stack((DQ[:,0], VQ[:,1]/DQ[:,1], np.sqrt(np.square(DQ[:,2])+np.square(VQ[:,2]))), axis=-1)
     Z = excludeinvalid(Z)
     W = np.stack((Z[:,0], integrate.cumtrapz(Z[:,1], Z[:,0], initial=Z[:,1][0]), Z[:,2]), axis=-1)
     W = excludeinvalid(W)
@@ -463,8 +471,8 @@ def main():
 
     if Qqzero>Qqone: Qqzero, Qqone=Qqone, Qqzero # Must be Qqzero < Qqone
 
-    ttaufold = calctau(beta, Qmin, Qqzero, Qqone, DQ, G)
-    ttauunfold = calctau(beta, Qmax, Qqone, Qqzero, DQ, G)
+    ttaufold, errortaufold = calctau(beta, Qmin, Qqzero, Qqone, DQ, G)
+    ttauunfold, errortauunfold = calctau(beta, Qmax, Qqone, Qqzero, DQ, G)
     ttTP = calcmtpt(beta, Qqzero, Qqone, DQ, G)
     ttTPb = calcmtpt(beta, Qqone, Qqzero, DQ, G)
 
@@ -482,6 +490,7 @@ def main():
     print('mtpt measured using the trajectory from ' + str(Qqone) + ' to ' + str(Qqzero) + ' is ' + str(CorrectionFactor*ctTPBA) + ' with ' + str(cnTPBA) + ' transitions.')
     print('Average mtpt measured using the trajectory between ' + str(Qqzero) + ' and ' + str(Qqone) + ' is ' + str(CorrectionFactor*ctTP) + ' with ' + str(cnTP) + ' transitions.')
     print('mtpt calculated using Szabo equation for folding is ' + str(ttTP) + ' and for unfolding is '+ str(ttTPb))
+    print('Errors: ' + str(errortaufold)+ ' and ' + str(errortauunfold))
 
     matrix_m = np.empty(shape=[0,16])
 
