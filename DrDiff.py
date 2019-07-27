@@ -516,7 +516,7 @@ def main():
     print('mtpt calculated using Szabo equation for folding is ' + str(ttTP) + ' +/- ' + str(uncertttTP) + ' and for unfolding is '+ str(ttTPb) + ' +/- ' + str(uncertttTPb))
 
 
-    matrix_m = np.empty(shape=[0,16])
+    matrix_m = np.empty(shape=[0,20])
 
     matrix_m = np.append( matrix_m, [['#mfpt-AB-Kramers', '#uncert-mfpt-AB-Kramers', 'mfpt-BA-Kramers', 'uncert-mfpt-BA-Kramers', 'mfpt-AB-trajectory', 'std-AB-trajectory', 'nAB', 'mfpt-BA-trajectory', 'std-BA-trajectory', 'nBA', 'average-mfpt', 'total-transitions', 'mtpt-AB-trajectory', 'std-mtpt-AB-trajectory', 'mtpt-BA-trajectory', 'std-mtpt-BA-trajectory', 'mtpt-AB-Szabo', 'uncert-mtpt-AB-Szabo', 'mtpt-BA-Szabo', 'uncert-mtpt-BA-Szabo']], axis=0)
     matrix_m = np.append( matrix_m, [[str(ttaufold), str(uncerttaufold), str(ttauunfold), str(uncerttauunfold), str(CorrectionFactor*ctAB), str(CorrectionFactor*cstdtAB), str(cnAB), str(CorrectionFactor*ctBA), str(CorrectionFactor*cstdtBA), str(cnBA), str(((CorrectionFactor*ctAB*cnAB+CorrectionFactor*ctBA*cnBA)/(cnAB+cnBA))), str((cnAB+cnBA)), str(CorrectionFactor*ctTPAB), str(CorrectionFactor*cstdtTPAB), str(CorrectionFactor*ctTPBA), str(CorrectionFactor*cstdtTPBA), str(ttTP), str(uncertttTP), str(ttTPb), str(uncertttTPb)]], axis=0)
