@@ -175,7 +175,10 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
                     GQ2 = np.nan
                     err2 = np.nan
                 utau = ((np.exp(beta*(GQ1-GQ2)))/(float(DQ[np.int(irow[0]), 1]))) #calculating t_folding/unfolding
-                uncerutau = np.absolute(utau)*np.sqrt(np.square(beta)*(np.square(err1)+np.square(err2))+np.square(float(DQ[np.int(irow[0]), 2])/float(DQ[np.int(irow[0]), 1])))
+                if float(DQ[np.int(irow[0]), 1]) !=0:
+                    uncerutau = np.absolute(utau)*np.sqrt(np.square(beta)*(np.square(err1)+np.square(err2))+np.square(float(DQ[np.int(irow[0]), 2])/float(DQ[np.int(irow[0]), 1])))
+                else:
+                    uncerutau = 0
             else:
                 utau = 0
                 uncerutau = 0
@@ -217,7 +220,10 @@ def calcmtpt(beta, Qzero, Qone, DQ, G):
 ################################################################################
 def rcoreint(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
     val = ((np.exp(beta*(GQ1)))/(float(DQ[np.int(irow[0]), 1]))) #calculating rintegral
-    uncert = np.absolute(val)*(np.sqrt(np.square(beta)*np.square(unc)+np.square(float(DQ[np.int(irow[0]), 2])/float(DQ[np.int(irow[0]), 1]))))
+    if float(DQ[np.int(irow[0]), 1]) !=0:
+        uncert = np.absolute(val)*(np.sqrt(np.square(beta)*np.square(unc)+np.square(float(DQ[np.int(irow[0]), 2])/float(DQ[np.int(irow[0]), 1]))))
+    else:
+        uncert = 0
     return val, uncert
 
 
@@ -228,7 +234,10 @@ def rcoreint(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
 def lcoreint(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
     xphi, unphi = phi(beta, Qzero, Qone, DQ, G, Qx)
     val = (np.exp(-1*beta*(GQ1))*xphi*(1-xphi)) #calculating lintegral
-    uncert = np.absolute(val)*beta*np.absolute((-1*beta*(GQ1))*xphi*(1-xphi))*(np.sqrt(np.square(unc/GQ1)+np.square(unphi/xphi)))
+    if GQ1 != 0 and xphi !=0:
+        uncert = np.absolute(val)*beta*np.absolute((-1*beta*(GQ1))*xphi*(1-xphi))*(np.sqrt(np.square(unc/GQ1)+np.square(unphi/xphi)))
+    else:
+        uncert = 0
     return val, uncert
 
 ################################################################################
@@ -274,7 +283,10 @@ def simpleint(calctest, funcion, beta, Qzero, Qone, G, DQ):
 ################################################################################
 def equationphi(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
     val = ((np.exp(beta*(GQ1)))/(float(DQ[np.int(irow[0]), 1]))) #calculating phi core
-    uncert = np.absolute(val)*(np.sqrt(np.square(beta)*np.square(unc)+np.square(float(DQ[np.int(irow[0]), 2])/float(DQ[np.int(irow[0]), 1]))))
+    if float(DQ[np.int(irow[0]), 1]) != 0:
+        uncert = np.absolute(val)*(np.sqrt(np.square(beta)*np.square(unc)+np.square(float(DQ[np.int(irow[0]), 2])/float(DQ[np.int(irow[0]), 1]))))
+    else:
+        uncert = 0
     return val, uncert
 ################################################################################
 
