@@ -92,7 +92,7 @@ def CheckFiles(q):
 ################################################################################
 
 ################################################################################
-# Function to exclude invalid values                                           #
+# Function to exclude invalid values for n-dimensional matrix                  #
 #                                                                              #
 ################################################################################
 
@@ -105,6 +105,19 @@ def excludeinvalid(M):
 
 
 ################################################################################
+# Function to exclude invalid values for one-dimensional matrix                #
+#                                                                              #
+################################################################################
+
+def excludeinvalid1D(M):
+    N = M[~np.isnan(M)]
+    O = N[~np.isinf(N)]
+    P = O[~np.isneginf(O)]
+    return P
+################################################################################
+
+
+################################################################################
 # Function to calculate ptpx                                                   #
 #                                                                              #
 ################################################################################
@@ -113,7 +126,7 @@ def ptpx(beta, Qzero, Qone, DQ, G):
     ptpxM = np.empty(shape=[0,2])
     for x in DQ[:,0]:
         if x >= Qzero and x <=Qone:
-            xphi = phi(beta, Qzero, Qone, DQ, G, x)
+            xphi, unphi = phi(beta, Qzero, Qone, DQ, G, x)
             ptpxM = np.append(ptpxM, [[x, 2*xphi*(1-xphi)]], axis=0)
     return ptpxM
 
@@ -135,6 +148,7 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
     taul = np.empty(shape=[0,3])
     idxzero = (np.abs(G[:,0]-Qzero)).argmin() #get index of Q value close to Qzero
     idxone = (np.abs(G[:,0]-Qone)).argmin() #get index of Q value close to Qone
+    #np.seterr(divide='ignore', invalid='ignore')
     if Qzero < Qone: x=1
     else: x=-1
     for Qj in G[:,0][idxzero:idxone+x:x]: #summing from Qzero to Qone
@@ -161,20 +175,19 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
                     GQ2 = np.nan
                     err2 = np.nan
                 utau = ((np.exp(beta*(GQ1-GQ2)))/(float(DQ[np.int(irow[0]), 1]))) #calculating t_folding/unfolding
-                errutau = np.sqrt(np.square((np.exp(beta*(GQ1-GQ2)))*(np.sqrt(np.square(err1)+np.square(err2))))+np.square(float(DQ[np.int(irow[0]), 2])))
+                uncerutau = np.absolute(utau)*np.sqrt(np.square(beta)*(np.square(err1)+np.square(err2))+np.square(float(DQ[np.int(irow[0]), 2])/float(DQ[np.int(irow[0]), 1])))
             else:
                 utau = 0
-            tau = np.append(tau, [[Qk, utau, errutau]], axis=0)
+                uncerutau = 0
+            tau = np.append(tau, [[Qk, utau, uncerutau]], axis=0)
             tau = excludeinvalid(tau)
-            #print(tau)
         inttau = integrate.cumtrapz(tau[:,1], tau[:,0], axis=0, initial=tau[0,1])[-1] #inner integral
-        errtau = np.sqrt(np.sum(np.square(tau[:,2]), axis=0)) #estimating error in inner integral
-        #print('Number of lines of taul: ' + str(np.amax(tau[:,2])))
-        taul = np.append(taul, [[Qj, inttau, errtau]], axis=0)
+        uncertau = inttau*np.sqrt(np.mean(np.square(excludeinvalid1D(tau[:,2]/tau[:,1])))) #estimating error in inner integral
+        taul = np.append(taul, [[Qj, inttau, uncertau]], axis=0)
         taul = excludeinvalid(taul)
     inttaul = integrate.cumtrapz(taul[:,1], taul[:,0], axis=0, initial=taul[0,1])[-1] #outer integral
-    errttaul = np.sqrt(np.sum(np.square(taul[:,2]), axis=0)) #estimating error in outer integral
-    return inttaul, errttaul
+    uncerttaul = inttaul*np.sqrt(np.amax(np.square(excludeinvalid1D(taul[:,2]/taul[:,1])))) #estimating error in inner integral
+    return inttaul, uncerttaul
 
 ################################################################################
 
@@ -193,24 +206,30 @@ def calcmtpt(beta, Qzero, Qone, DQ, G):
     vrint = simpleint(testcalc, rcoreint, beta, Qzero, Qone, G, DQ)
     intrintegral = integrate.cumtrapz(vrint[:,1], vrint[:,0], axis=0, initial=vrint[0,1])[-1] #right integral from Qunf to Qfold
     inttpt = intlintegral*intrintegral
-    return inttpt
+    np.seterr(divide='ignore', invalid='ignore')
+    unmtpt = np.absolute(inttpt)*np.sqrt(np.mean(np.square(excludeinvalid1D(vlint[:,2]/vlint[:,1]))) + np.mean(np.square(excludeinvalid1D(vrint[:,2]/vrint[:,1])))) #use max uncertainty evaluated in both integral combinations
+    return inttpt, unmtpt
 ################################################################################
 
 ################################################################################
 # Equation for mtpt - right integral                                           #
 #                                                                              #
 ################################################################################
-def rcoreint(irow, jrow, G, DQ, beta, GQ1, Qx, Qzero, Qone):
-    return ((np.exp(beta*(GQ1)))/(float(DQ[np.int(irow[0]), 1]))) #calculating rintegral
+def rcoreint(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
+    val = ((np.exp(beta*(GQ1)))/(float(DQ[np.int(irow[0]), 1]))) #calculating rintegral
+    uncert = np.absolute(val)*(np.sqrt(np.square(beta)*np.square(unc)+np.square(float(DQ[np.int(irow[0]), 2])/float(DQ[np.int(irow[0]), 1]))))
+    return val, uncert
 
 
 ################################################################################
 # Equation for mtpt - left integral                                            #
 #                                                                              #
 ################################################################################
-def lcoreint(irow, jrow, G, DQ, beta, GQ1, Qx, Qzero, Qone):
-    xphi = phi(beta, Qzero, Qone, DQ, G, Qx)
-    return (np.exp(-1*beta*(GQ1))*xphi*(1-xphi)) #calculating lintegral
+def lcoreint(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
+    xphi, unphi = phi(beta, Qzero, Qone, DQ, G, Qx)
+    val = (np.exp(-1*beta*(GQ1))*xphi*(1-xphi)) #calculating lintegral
+    uncert = np.absolute(val)*beta*np.absolute((-1*beta*(GQ1))*xphi*(1-xphi))*(np.sqrt(np.square(unc/GQ1)+np.square(unphi/xphi)))
+    return val, uncert
 
 ################################################################################
 # Function to \phi(x)                                                          #
@@ -224,7 +243,8 @@ def phi(beta, Qzero, Qone, DQ, G, qx):
     vupphi =  simpleint(testcalc, equationphi, beta, Qzero, qx, G, DQ)
     intupphi = integrate.cumtrapz(vupphi[:,1], vupphi[:,0], axis=0, initial=vupphi[0,1])[-1] #numerator integral from Qzero to Q
     phix = (intupphi/intlowphi)
-    return phix
+    uncphi = np.absolute(phix)*np.sqrt(np.mean(np.square(excludeinvalid1D(vupphi[:,2]/vupphi[:,1]))) + np.mean(np.square(excludeinvalid1D(vlowphi[:,2]/vlowphi[:,1])))) #use max uncertainty evaluated in both integral combinations
+    return phix, uncphi
 ################################################################################
 
 ################################################################################
@@ -234,7 +254,7 @@ def phi(beta, Qzero, Qone, DQ, G, qx):
 def simpleint(calctest, funcion, beta, Qzero, Qone, G, DQ):
     G = excludeinvalid(G)
     DQ = excludeinvalid(DQ)
-    sampledvalues = np.empty(shape=[0,2]) #initializing two column numpy array
+    sampledvalues = np.empty(shape=[0,3]) #initializing two column numpy array
     idxzero = (np.abs(G[:,0]-Qzero)).argmin() #get index of Q value close to Qzero
     idxone = (np.abs(G[:,0]-Qone)).argmin() #get index of Q value close to Qone
     if Qzero < Qone: x=1
@@ -242,7 +262,8 @@ def simpleint(calctest, funcion, beta, Qzero, Qone, G, DQ):
     for Qx in G[:,0][idxzero:idxone+x:x]:  #summing from Qzero to Qone
         irow, icol = np.where(DQ == Qx)
         jrow, jcol = np.where(G == Qx)
-        sampledvalues = np.append(sampledvalues, [[Qx, calctest(funcion, irow, jrow, G, DQ, beta, Qx, Qzero, Qone)]], axis=0)
+        value, uncertainty = calctest(funcion, irow, jrow, G, DQ, beta, Qx, Qzero, Qone)
+        sampledvalues = np.append(sampledvalues, [[Qx, value, uncertainty]], axis=0)
     sampledvalues = excludeinvalid(sampledvalues)
     return sampledvalues
 ################################################################################
@@ -251,8 +272,10 @@ def simpleint(calctest, funcion, beta, Qzero, Qone, G, DQ):
 # Function to calculate core of \phi(x) integral                               #
 #                                                                              #
 ################################################################################
-def equationphi(irow, jrow, G, DQ, beta, GQ1, Qx, Qzero, Qone):
-    return ((np.exp(beta*(GQ1)))/(float(DQ[np.int(irow[0]), 1]))) #calculating phi core
+def equationphi(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
+    val = ((np.exp(beta*(GQ1)))/(float(DQ[np.int(irow[0]), 1]))) #calculating phi core
+    uncert = np.absolute(val)*(np.sqrt(np.square(beta)*np.square(unc)+np.square(float(DQ[np.int(irow[0]), 2])/float(DQ[np.int(irow[0]), 1]))))
+    return val, uncert
 ################################################################################
 
 ################################################################################
@@ -264,12 +287,15 @@ def testcalc(eq, irow, jrow, G, DQ, beta, Qx, Qzero, Qone):
     if (np.size(irow) != 0 and np.size(jrow) != 0):
         if not ((abs(float(G[np.int(jrow[0]), 1])) >= (abs(np.nanmean(G, axis=0)[1])+abs(3*np.nanstd(G, axis=0)[1]))) or (abs(float(G[np.int(jrow[0]), 1])) <= (abs(np.nanmean(G, axis=0)[1])-abs(3*np.nanstd(G, axis=0)[1])))):
             GQ1 = (float(G[np.int(jrow[0]), 1]))
+            unci = (float(G[np.int(jrow[0]), 2]))
         else:
             GQ1 = np.nan
-        eval = eq(irow, jrow, G, DQ, beta, GQ1, Qx, Qzero, Qone)
+            unci = np.nan
+        eval, uncer = eq(irow, jrow, G, DQ, beta, GQ1, unci, Qx, Qzero, Qone)
     else:
         eval = 0
-    return eval
+        uncer = 0
+    return eval, uncer
 ################################################################################
 
 
@@ -414,7 +440,7 @@ def main():
         DQ.append([Qi, sloped/CorrectionFactor, std_errd]) # Save Diffusion for each coordinate value
         VQ.append([Qi, slopev/CorrectionFactor, std_errv]) # Save Drift for each coordinate value
     #Pbar.finish()
-    print('################## DONE ########################')
+    print('################### DONE ##########################')
     # np.savetxt('DQ.dat', DQ) # Save to file
     # np.savetxt('VQ.dat', VQ)
     # name for files
@@ -425,8 +451,6 @@ def main():
 
     np.savetxt('DQ' + filename + '.dat', DQ) # Save to file
     np.savetxt('VQ' + filename + '.dat', VQ)
-
-    #print(VQ)
 
     #to calculate F_{Stochastic}
     Z = np.stack((DQ[:,0], VQ[:,1]/DQ[:,1], np.sqrt(np.square(DQ[:,2])+np.square(VQ[:,2]))), axis=-1)
@@ -471,31 +495,31 @@ def main():
 
     if Qqzero>Qqone: Qqzero, Qqone=Qqone, Qqzero # Must be Qqzero < Qqone
 
-    ttaufold, errortaufold = calctau(beta, Qmin, Qqzero, Qqone, DQ, G)
-    ttauunfold, errortauunfold = calctau(beta, Qmax, Qqone, Qqzero, DQ, G)
-    ttTP = calcmtpt(beta, Qqzero, Qqone, DQ, G)
-    ttTPb = calcmtpt(beta, Qqone, Qqzero, DQ, G)
+    ttaufold, uncerttaufold = calctau(beta, Qmin, Qqzero, Qqone, DQ, G)
+    ttauunfold, uncerttauunfold = calctau(beta, Qmax, Qqone, Qqzero, DQ, G)
+    ttTP, uncertttTP = calcmtpt(beta, Qqzero, Qqone, DQ, G)
+    ttTPb, uncertttTPb = calcmtpt(beta, Qqone, Qqzero, DQ, G)
 
 
-    np.savetxt('pTPx_' + filename + '.dat', ptpx(beta, Qqzero, Qqone, DQ, G))
+    #np.savetxt('pTPx_' + filename + '.dat', ptpx(beta, Qqzero, Qqone, DQ, G))
 
     ctAB, ctBA, cnTPAB, ctTPAB, cnTPBA, ctTPBA, cnAB, cnBA, cnTP, ctTP, cstdtAB, cstdtBA, cstdtTPAB, cstdtTPBA = calcttrajectory(Qqzero, Qqone, Q)
 
 
-    print('mfpt calculated using Kramers equation from ' + str(Qqzero) + ' to ' + str(Qqone) + ' is ' + str(ttaufold))
-    print('mfpt calculated using Kramers equation from ' + str(Qqone) + ' to ' + str(Qqzero) + ' is ' + str(ttauunfold))
+    print('mfpt calculated using Kramers equation from ' + str(Qqzero) + ' to ' + str(Qqone) + ' is ' + str(ttaufold) + ' +/- ' + str(uncerttaufold))
+    print('mfpt calculated using Kramers equation from ' + str(Qqone) + ' to ' + str(Qqzero) + ' is ' + str(ttauunfold) + ' +/- ' + str(uncerttauunfold))
     print('mfpt measured using the trajectory from ' + str(Qqzero) + ' to ' + str(Qqone) + ' is ' + str(CorrectionFactor*ctAB) + ' with ' + str(cnAB) + ' transitions.')
     print('mfpt measured using the trajectory from ' + str(Qqone) + ' to ' + str(Qqzero) + ' is ' + str(CorrectionFactor*ctBA) + ' with ' + str(cnBA) + ' transitions.')
     print('mtpt measured using the trajectory from ' + str(Qqzero) + ' to ' + str(Qqone) + ' is ' + str(CorrectionFactor*ctTPAB) + ' with ' + str(cnTPAB) + ' transitions.')
     print('mtpt measured using the trajectory from ' + str(Qqone) + ' to ' + str(Qqzero) + ' is ' + str(CorrectionFactor*ctTPBA) + ' with ' + str(cnTPBA) + ' transitions.')
     print('Average mtpt measured using the trajectory between ' + str(Qqzero) + ' and ' + str(Qqone) + ' is ' + str(CorrectionFactor*ctTP) + ' with ' + str(cnTP) + ' transitions.')
-    print('mtpt calculated using Szabo equation for folding is ' + str(ttTP) + ' and for unfolding is '+ str(ttTPb))
-    print('Errors: ' + str(errortaufold)+ ' and ' + str(errortauunfold))
+    print('mtpt calculated using Szabo equation for folding is ' + str(ttTP) + ' +/- ' + str(uncertttTP) + ' and for unfolding is '+ str(ttTPb) + ' +/- ' + str(uncertttTPb))
+
 
     matrix_m = np.empty(shape=[0,16])
 
-    matrix_m = np.append( matrix_m, [['#mfpt-AB-Kramers', 'mfpt-BA-Kramers', 'mfpt-AB-trajectory', 'std-AB-trajectory', 'nAB', 'mfpt-BA-trajectory', 'std-BA-trajectory', 'nBA', 'average-mfpt', 'total-transitions', 'mtpt-AB-trajectory', 'std-mtpt-AB-trajectory', 'mtpt-BA-trajectory', 'std-mtpt-BA-trajectory', 'mtpt-AB-Szabo', 'mtpt-BA-Szabo']], axis=0)
-    matrix_m = np.append( matrix_m, [[str(ttaufold), str(ttauunfold), str(CorrectionFactor*ctAB), str(CorrectionFactor*cstdtAB), str(cnAB), str(CorrectionFactor*ctBA), str(CorrectionFactor*cstdtBA), str(cnBA), str(((CorrectionFactor*ctAB*cnAB+CorrectionFactor*ctBA*cnBA)/(cnAB+cnBA))), str((cnAB+cnBA)), str(CorrectionFactor*ctTPAB), str(CorrectionFactor*cstdtTPAB), str(CorrectionFactor*ctTPBA), str(CorrectionFactor*cstdtTPBA), str(ttTP), str(ttTPb)]], axis=0)
+    matrix_m = np.append( matrix_m, [['#mfpt-AB-Kramers', '#uncert-mfpt-AB-Kramers', 'mfpt-BA-Kramers', 'uncert-mfpt-BA-Kramers', 'mfpt-AB-trajectory', 'std-AB-trajectory', 'nAB', 'mfpt-BA-trajectory', 'std-BA-trajectory', 'nBA', 'average-mfpt', 'total-transitions', 'mtpt-AB-trajectory', 'std-mtpt-AB-trajectory', 'mtpt-BA-trajectory', 'std-mtpt-BA-trajectory', 'mtpt-AB-Szabo', 'uncert-mtpt-AB-Szabo', 'mtpt-BA-Szabo', 'uncert-mtpt-BA-Szabo']], axis=0)
+    matrix_m = np.append( matrix_m, [[str(ttaufold), str(uncerttaufold), str(ttauunfold), str(uncerttauunfold), str(CorrectionFactor*ctAB), str(CorrectionFactor*cstdtAB), str(cnAB), str(CorrectionFactor*ctBA), str(CorrectionFactor*cstdtBA), str(cnBA), str(((CorrectionFactor*ctAB*cnAB+CorrectionFactor*ctBA*cnBA)/(cnAB+cnBA))), str((cnAB+cnBA)), str(CorrectionFactor*ctTPAB), str(CorrectionFactor*cstdtTPAB), str(CorrectionFactor*ctTPBA), str(CorrectionFactor*cstdtTPBA), str(ttTP), str(uncertttTP), str(ttTPb), str(uncertttTPb)]], axis=0)
 
     np.savetxt('mfpt-mtpt-' + filename + '.dat', matrix_m, fmt='%s')
 
