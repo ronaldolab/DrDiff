@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
 #coding: utf8
 ################################################################################
-#
-# Calculate the Diffusion Coefficient (D(Q)) and the Free-Energy (G(Q))
-#   using the Stochastic Approach
-#
-#
-# Contribute by:
-#  Vinícius de Godoi Contessoto
-#  Frederico Campos Freitas
-#  Ronaldo Junio de Oliveira
-#
-#
-# python StochasticDiffusion.py trajectory_file
-#
-#  trajectory (just one column - coordinate)
-#
-#
-# PS: Need to install some libraries: numpy, scipy and itertools
-#
+#                                                                              #
+# Calculate the Diffusion Coefficient (D(Q)) and the Free-Energy (F_Stoch(Q))  #
+#   using the Stochastic Approach                                              #
+#                                                                              #
+#                                                                              #
+# Contribute by:                                                               #
+#  Vinícius de Godoi Contessoto                                                #
+#  Frederico Campos Freitas                                                    #
+#  Ronaldo Junio de Oliveira                                                   #
+#                                                                              #
+#                                                                              #
+# python StochasticDiffusion.py trajectory_file                                #
+#                                                                              #
+#  trajectory (just one column - coordinate)                                   #
+#                                                                              #
+#                                                                              #
+# PS: Need to install some libraries: numpy, scipy and itertools               #
+#                                                                              #
 ################################################################################
 
 import sys
