@@ -416,6 +416,12 @@ def main():
     print('Qmax =', Qmax, '| Qmin =', Qmin)
     print('Mean(Q) =', np.mean(Q), '| Std(Q) =', np.std(Q))
     print('Std(Q)/Mean(Q) =', np.std(Q)/np.mean(Q))
+    if ((Q_zero < Qmin) or (Q_one > Qmax)):
+        Q_zero = (Qmin + 0.2*abs(Qmin))
+        Q_one = (Qmax - 0.2*abs(Qmax))
+        print('The transition state boundary was mischoosed. Your new transition state boundaries are = ', Q_zero, ' and ', Q_one)
+    else:
+        print('The analysis will start.')
     #print('################################################')
     nbins = np.int(np.ceil((Qmax-Qmin)/Qbins))
     Free_energy_Histogram_Q(arg, Q, nbins) ## Call function to Free Energy and Histogram
