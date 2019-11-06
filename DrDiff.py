@@ -110,10 +110,10 @@ def excludeinvalid(M):
 ################################################################################
 
 def excludeinvalid1D(M):
-    N = M[~np.isnan(M)]
-    O = N[~np.isinf(N)]
-    P = O[~np.isneginf(O)]
-    return P
+    M = M[~np.isnan(M)]
+    M = M[~np.isinf(M)]
+    M = M[~np.isneginf(M)]
+    return M
 ################################################################################
 
 
@@ -125,7 +125,7 @@ def excludeinvalid1D(M):
 def ptpx(beta, Qzero, Qone, DQ, G):
     ptpxM = np.empty(shape=[0,2])
     for x in DQ[:,0]:
-        if x >= Qzero and x <=Qone:
+        if np.logical_and(np.greater_equal(x, Qzero), np.less_equal(x, Qone)):
             xphi, unphi = phi(beta, Qzero, Qone, DQ, G, x)
             ptpxM = np.append(ptpxM, [[x, 2*xphi*(1-xphi)]], axis=0)
     return ptpxM
@@ -149,7 +149,7 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
     idxzero = (np.abs(G[:,0]-Qzero)).argmin() #get index of Q value close to Qzero
     idxone = (np.abs(G[:,0]-Qone)).argmin() #get index of Q value close to Qone
     #np.seterr(divide='ignore', invalid='ignore')
-    if Qzero < Qone: x=1
+    if np.less(Qzero, Qone): x=1
     else: x=-1
     for Qj in G[:,0][idxzero:idxone+x:x]: #summing from Qzero to Qone
         irow, icol = np.where(DQ == Qj)
@@ -157,11 +157,11 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
         tau = np.empty(shape=[0,3])
         idxinit = (np.abs(G[:,0]-Qinit)).argmin()
         idxj = (np.abs(G[:,0]-Qj)).argmin()
-        if Qinit < Qj: y=1
+        if np.less(Qinit, Qj): y=1
         else: y=-1
         for Qk in G[:,0][idxinit:idxj+y:y]: #summing from Qinit to Qj
             krow, kcol = np.where(G == Qk)
-            if (np.size(irow) != 0 and np.size(jrow) != 0 and np.size(krow) != 0):
+            if (np.not_equal(np.size(irow), 0) and np.not_equal(np.size(jrow), 0) and np.not_equal(np.size(krow), 0)):
                 if not ((abs(float(G[np.int(jrow[0]), 1])) >= (abs(np.nanmean(G, axis=0)[1])+abs(3*np.nanstd(G, axis=0)[1]))) or (abs(float(G[np.int(jrow[0]), 1])) <= (abs(np.nanmean(G, axis=0)[1])-abs(3*np.nanstd(G, axis=0)[1])))):
                     GQ1 = (float(G[np.int(jrow[0]), 1]))
                     err1 = (float(G[np.int(jrow[0]), 2]))
@@ -220,7 +220,7 @@ def calcmtpt(beta, Qzero, Qone, DQ, G):
 ################################################################################
 def rcoreint(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
     val = ((np.exp(beta*(GQ1)))/(float(DQ[np.int(irow[0]), 1]))) #calculating rintegral
-    if float(DQ[np.int(irow[0]), 1]) !=0:
+    if np.not_equal(float(DQ[np.int(irow[0]), 1]), 0):
         uncert = np.absolute(val)*(np.sqrt(np.square(beta)*np.square(unc)+np.square(float(DQ[np.int(irow[0]), 2])/float(DQ[np.int(irow[0]), 1]))))
     else:
         uncert = 0
@@ -234,7 +234,7 @@ def rcoreint(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
 def lcoreint(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
     xphi, unphi = phi(beta, Qzero, Qone, DQ, G, Qx)
     val = (np.exp(-1*beta*(GQ1))*xphi*(1-xphi)) #calculating lintegral
-    if GQ1 != 0 and xphi !=0:
+    if np.logical_and(np.not_equal(GQ1, 0), np.not_equal(xphi, 0)):
         uncert = np.absolute(val)*beta*np.absolute((-1*beta*(GQ1))*xphi*(1-xphi))*(np.sqrt(np.square(unc/GQ1)+np.square(unphi/xphi)))
     else:
         uncert = 0
@@ -251,7 +251,7 @@ def phi(beta, Qzero, Qone, DQ, G, qx):
     intlowphi = integrate.cumtrapz(vlowphi[:,1], vlowphi[:,0], axis=0, initial=vlowphi[0,1])[-1] #denominator integral from Qzero to Qone
     vupphi =  simpleint(testcalc, equationphi, beta, Qzero, qx, G, DQ)
     intupphi = integrate.cumtrapz(vupphi[:,1], vupphi[:,0], axis=0, initial=vupphi[0,1])[-1] #numerator integral from Qzero to Q
-    phix = (intupphi/intlowphi)
+    phix = np.divide(intupphi, intlowphi)
     uncphi = np.absolute(phix)*np.sqrt(np.mean(np.square(excludeinvalid1D(vupphi[:,2]/vupphi[:,1]))) + np.mean(np.square(excludeinvalid1D(vlowphi[:,2]/vlowphi[:,1])))) #use max uncertainty evaluated in both integral combinations
     return phix, uncphi
 ################################################################################
@@ -282,7 +282,7 @@ def simpleint(calctest, funcion, beta, Qzero, Qone, G, DQ):
 #                                                                              #
 ################################################################################
 def equationphi(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
-    val = ((np.exp(beta*(GQ1)))/(float(DQ[np.int(irow[0]), 1]))) #calculating phi core
+    val = np.divide((np.exp(beta*(GQ1))), (float(DQ[np.int(irow[0]), 1]))) #calculating phi core
     if float(DQ[np.int(irow[0]), 1]) != 0:
         uncert = np.absolute(val)*(np.sqrt(np.square(beta)*np.square(unc)+np.square(float(DQ[np.int(irow[0]), 2])/float(DQ[np.int(irow[0]), 1]))))
     else:
