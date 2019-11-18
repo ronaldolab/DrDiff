@@ -302,7 +302,7 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
 
     #Outer integral
     inttaul = integrate.cumtrapz(taul[:,1], taul[:,0], axis=0, initial=taul[0,1])[-1] #outer integral
-    uncerttaul = inttaul*np.sqrt(np.amax(np.square(excludeinvalid1D(taul[:,2]/taul[:,1])))) #estimating error in inner integral
+    uncerttaul = inttaul*np.sqrt(np.amax(np.square(excludeinvalid(taul[:,2]/taul[:,1])))) #estimating error in inner integral
     return inttaul, uncerttaul
 
 ##################################################################################################
