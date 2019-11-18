@@ -1,0 +1,22 @@
+/* Carousel base class */
+.carousel {
+  margin-bottom: 4rem;
+}
+
+/*
+.carousel-caption {
+  bottom: 3rem;
+  z-index: 10;
+}
+
+.carousel-item {
+  height: 32rem;
+}
+.carousel-item > img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-width: 100%;
+  max-width: 80%;
+  height: 32rem;
+}*/

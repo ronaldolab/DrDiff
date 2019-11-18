@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+    <head>
+
+        {% include 'bootstrap.html' %}
+
+        <title>About</title>
+    </head>
+
+    <body class = "body">
+
+        {% include 'navbar.html'%}
+
+        <div class="container">
+
+            <div class="row align-items-center mb-4">
+                <div class="col text-center text-md-left pr-md-5">
+                    <h1 class="font-weight-light" style="padding-top: 1.5rem;">The Dev team</h2>
+                    <p class="lead mb-4">
+                        The developers from Ronaldolab.
+                    </p>
+                </div>
+            </div>
+
+            <div class="row align-items-center mb-3 justify-content-center">
+                <div class="col  text-center text-md-left">
+
+                    <div class="card-deck font-weight-light">
+
+                        <div class="card" style="width: 15rem; max-width: 15rem;">
+                            <img class="card-img-top" src="{{url_for('static', filename='ronaldo.png')}}" alt="Ronaldo">
+                            <div class="card-body">
+                                <h5 class="card-title font-weight-light">Ronaldo J. Oliveira</h5>
+                                <p class="card-text"><small class="text-muted">Principal Investigator</small></p>
+                                <p class="card-text">Interested in protein folding and dynamics by diffusion theories.</p>
+                                <p class="card-text"><small class="text-muted">
+                                    <a href="mailto:ronaldo.oliviera@uftm.edu.br" class="card-link text-decoration-none">
+                                        <i class="fas fa-envelope"></i>&nbsp;ronaldo.oliviera@uftm.edu.br</a></small>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="card" style="width: 15rem; max-width: 15rem;">
+                            <img class="card-img-top" src="{{url_for('static', filename='fred.png')}}" alt="Ronaldo">
+                            <div class="card-body">
+                                <h5 class="card-title font-weight-light">Frederico C. Freitas</h5>
+                                <p class="card-text"><small class="text-muted">PhD Candidate</small></p>
+                                <p class="card-text">My research focus on developing algorithms and theory to study biological macromolecules.</p>
+                                <p class="card-text"><small class="text-muted">
+                                    <a href="mailto:frederico.freitas@uftm.edu.br" class="card-link text-decoration-none">
+                                        <i class="fas fa-envelope"></i>&nbsp;frederico.freitas@uftm.edu.br</a></small>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="card" style="width: 15rem; max-width: 15rem;">
+                            <img class="card-img-top" src="{{url_for('static', filename='paulo.png')}}" alt="Ronaldo">
+                            <div class="card-body">
+                                <h5 class="card-title font-weight-light">Paulo H. B. Ferreira</h5>
+                                <p class="card-text"><small class="text-muted">Master Candidate</small></p>
+                                <p class="card-text">My research focus on developing algorithms and theory to study biological macromolecules.</p>
+                                <p class="card-text"><small class="text-muted">
+                                    <a href="mailto:pauloh.physics@gmail.com" class="card-link text-decoration-none">
+                                        <i class="fas fa-envelope"></i>&nbsp;pauloh.physics@gmail.com</a></small>
+                                </p>
+                            </div>
+                        </div>
+
+                    </div>
+
+            <br>
+                </div>
+            </div>
+
+        </div><!-- /.container -->
+        <br>
+
+        {% include 'footer.html' %}
+
+        <!-- Optional JavaScript -->
+        <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+        {% include 'bootstrapJS.html' %}
+
+    </body>
+</html>

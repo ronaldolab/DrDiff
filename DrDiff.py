@@ -49,7 +49,8 @@ import numpy as np
 from itertools import islice
 from scipy import stats
 from scipy import integrate
-#from scipy.signal import argrelmin
+from scipy.signal import argrelmin
+from scipy.signal import savgol_filter
 import matplotlib.pyplot as plt
 #import plotly.graph_objs as go  # remove this and add matplotlib
 #import plotly.io as pio         # remove this
@@ -79,6 +80,12 @@ def Free_energy_Histogram_Q(Qf,nbins,beta):
     # Set minimum to zero + 1
     F0 = np.min(Free[:,1])
     Free[:,1] = Free[:,1] - F0 + 1
+
+    #If do you prefer a method in which the last minima is always zero:
+    #FG = savgol_filter(FQ, 5, 3, mode='nearest')
+    #Free = np.c_[bins_center, FQ]
+    #id = argrelmin(FG)[-1][-1]
+    #Free[:,1] = Free[:,1]-Free[:,1][id]
 
     return Free
 

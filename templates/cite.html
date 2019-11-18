@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+    <head>
+
+        {% include 'bootstrap.html' %}
+
+        <title>About</title>
+    </head>
+
+    <body class = "body">
+
+        {% include 'navbar.html'%}
+
+        <div class="container">
+
+            <div class="row align-items-center mb-4">
+                <div class="col text-center text-md-left pr-md-5">
+                    <h1 class="font-weight-light" style="padding-top: 1.5rem;">How to cite us</h2>
+                    <p class="lead mb-4">
+                        These are the main references.
+                    </p>
+                </div>
+            </div>
+
+            <div class="card border-0">
+                <div class="card-body">
+                <!--h5 class=" card-title font-weight-light">References</h5-->
+
+                    <ul class="list-group font-weight-light text-justify">
+                        <li class="list-group-item">
+                            Stochastic diffusion framework determines the free-energy landscape and rate from single-molecule trajectory. Ronaldo J. Oliveira. The Journal of Chemical Physics, Volume 149, Issue 23, Page 234107, 2018.
+                            <a target="_blank" href="https://aip.scitation.org/doi/10.1063/1.5052142" class="card-link py-2 text-decoration-none">https://aip.scitation.org/doi/10.1063/1.5052142</a>.
+                        </li>
+                        <li class="list-group-item">
+                            Stochastic Drift-Diffusion Framework (DrDiff) determines kinetics and thermodynamics of two-state protein folding trajectory. FC Freitas, AN Lima, VG Contessoto, PC Whitford, RJ Oliveira. <em>In preparation.</em>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <br>
+
+        </div><!-- /.container -->
+        <br>
+
+        {% include 'footer.html' %}
+
+        <!-- Optional JavaScript -->
+        <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+        {% include 'bootstrapJS.html' %}
+
+    </body>
+</html>

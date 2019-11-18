@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+    <head>
+
+        {% include 'bootstrap.html' %}
+
+        <title>Leave your comments to the community and developers</title>
+    </head>
+
+    <body class = "body">
+
+        {% include 'navbar.html'%}
+
+        <div class="container">
+
+            {% for comment in comments %}
+                <div class="row">
+                    <div class="font-weight-light">
+                        {{ comment.content }}
+                    </div>
+                </div>
+                <div class="row" style="margin-bottom: 2ex">
+                    <div "font-weight-light">
+                        <small>
+                            Posted
+                            {% if comment.posted %}
+                                {{ comment.posted.strftime("%A, %d %B %Y at %H:%M") }}
+                            {% else %}
+                                at an unknown time
+                            {% endif %}
+                            by
+                            {% if comment.commenter %}
+                                {{ comment.commenter.username }}
+                            {% else %}
+                                anonymous
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            {% endfor %}
+
+            {% if current_user.is_authenticated %}
+                <div class="row">
+                    <form action="." method="POST">
+                        <textarea name="contents" placeholder="Enter a comment" class="form-control"></textarea>
+                        <input type="submit" class="btn btn-success" value="Post comment">
+                    </form>
+                </div>
+            {% endif %}
+
+        </div><!-- /.container -->
+
+        <br>
+
+        {% include 'footer.html' %}
+
+        <!-- Optional JavaScript -->
+        <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+        {% include 'bootstrapJS.html' %}
+
+    </body>
+</html>

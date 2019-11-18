@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+    <head>
+
+        {% include 'bootstrap.html' %}
+
+        <title>DrDiff framework</title>
+
+        <!-- Custom styles for this template -->
+        <!--link href="{{url_for('static', filename='carousel.css')}}" rel="stylesheet"-->
+
+    </head>
+
+    <body class = "body">
+
+        {% include 'navbar.html'%}
+
+    <main role="main">
+
+        <div class="container-fluid" style="background:#777;">
+
+            <div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel" style="max-height: 32rem;">
+                <ol class="carousel-indicators">
+                    <li data-target="#carouselExampleIndicators" data-slide-to="0" class="active"></li>
+                    <li data-target="#carouselExampleIndicators" data-slide-to="1"></li>
+                </ol>
+
+                <div class="carousel-inner">
+
+                    <div class="carousel-item active" style="max-height: 32rem;">
+
+                        <img src="{{url_for('static', filename='DrDiff_back4.svg')}}" class="d-inline-block align-middle w-100" alt="">
+
+                        <div class="carousel-caption text-white">
+                            <div class="row align-items-center">
+                                <div class="col text-center">
+                                    <h1 class="display-4 font-weight-light">DrDiff</h1>
+                                    <p class="lead mb-4 d-md-block">A framework that characterizes kinetics and thermodynamics of single-molecule trajectories.</p>
+                                    <p>
+                                        <a href="{{ url_for('software') }}" class="btn btn-lg btn-success justify-content-center mb-mt-4" role="button">Lauch DrDiff &raquo;</a>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="carousel-item" style="max-height: 32rem;">
+
+                        <a href="{{ url_for('software') }}">
+                            <img src="{{url_for('static', filename='DrDiff_flow4.svg')}}" class="img-fluid d-block w-100" style="max-height: 32rem;" alt="DrDiff_flow">
+                        </a>
+
+                    </div>
+
+                </div>
+
+                <a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="sr-only">Previous</span>
+                </a>
+                <a class="carousel-control-next" href="#carouselExampleIndicators" role="button" data-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="sr-only">Next</span>
+                </a>
+            </div>
+
+        </div>
+
+
+        <div class="container-fluid mt-4">
+
+            <div class="row justify-content-center bg-light text-dark">
+                <div class="col py-3">
+                    <div class="text-center heading-section font-weight-light">
+                        This framework is developed at Laborat&oacute;rio de Biof&iacute;sca Te&oacute;rica.
+                    </div>
+                </div>
+            </div>
+            <div class="row justify-content-center bg-light text-dark">
+                <div class="col py-3 mb-3"></div>
+                <div class="col py-3 mb-3">
+                    <a target="_blank" href="https://ronaldolab.tk/" class="text-dark text-decoration-none">
+                        <h4 class="font-weight-light text-center">
+                            <img src="{{url_for('static', filename='logo.svg')}}" height="50" class="d-inline-block align-middle" alt="ronaldolab">
+                                Ronaldolab
+                        </h4>
+                    </a>
+                </div>
+                <div class="col py-3 mb-3">
+                    <a target="_blank" href="http://uftm.edu.br" class="text-white text-decoration-none">
+                        <span style="font-size: 1.5rem;">
+                            <img height="50"  src="{{url_for('static', filename='uftm.png')}}" class="rounded mx-auto d-block" alt="UFTM">
+                        </span>
+                    </a>
+                </div>
+                <div class="col py-3 mb-3"></div>
+            </div>
+
+        </div>
+        <!-- /.container -->
+
+    </main>
+
+
+        {% include 'footer.html' %}
+
+        <!-- Optional JavaScript -->
+        <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+        {% include 'bootstrapJS.html' %}
+
+    </body>
+</html>

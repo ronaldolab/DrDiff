@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+    <head>
+
+        {% include 'bootstrap.html' %}
+
+        <title>About</title>
+    </head>
+
+    <body class = "body">
+
+        {% include 'navbar.html'%}
+
+        <div class="container">
+
+            <div class="row align-items-center">
+                <div class="col text-center text-md-left pr-md-5">
+                    <h1 class="font-weight-light" style="padding-top: 1.5rem;">What is DrDiff</h2>
+                    <p class="lead mb-4">DrDiff is the name given to the Stochastic Drift-Diffusion Framework.</p>
+                </div>
+            </div>
+
+            <div class="row align-items-center pt-3" style="background:#777;">
+                <div class="col mx-auto pr-md-5 mb-3">
+                    <a href="{{ url_for('software') }}">
+                        <img height="350"  src="{{url_for('static', filename='DrDiff_flow4.svg')}}" class="img-fluid rounded mx-auto d-block" alt="DrDiff_flowchart">
+                    </a>
+                </div>
+            </div>
+
+            <div class="row align-items-center pt-3">
+                <div class="col text-justify pr-md-5 mb-3">
+                    <h2 class="font-weight-light" style="padding-top: 1.5rem;">In the Protein-Folding context</h3>
+                    <p>
+                        Protein folding is a complex process that is usually described as diffusion over a one-dimensional projection of the high-dimensional energy landscape.
+                        The Stochastic Drift-Diffusion Framework (DrDiff) is an approach that characterizes the kinetic and thermodynamic properties of folding trajectories.
+                        DrDiff characterizes the thermodynamic free-energy profile (<em>F(Q)</em>) and the kinetic folding (<em>&tau;<sub>f</sub></em>) and transition path times (<em>&tau;<sub>TP</sub></em>) by determining the coordinate-dependent drift-velocity (<em>v(Q)</em>) and diffusion (<em>D(Q)</em>) coefficients from trajectory time traces (<em>Q(t)</em>).
+                    </p>
+                    <p>
+                        With the rapid advance of single-molecule techniques, the DrDiff computational framework might be a useful ally for determining the free-energy, folding and transition path times by providing time observables of biological or condensed-phase systems.
+                    </p>
+                </div>
+            </div>
+        </div><!-- /.container -->
+
+        {% include 'footer.html' %}
+
+        <!-- Optional JavaScript -->
+        <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+        {% include 'bootstrapJS.html' %}
+
+    </body>
+</html>

@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+    <head>
+
+        {% include 'bootstrap.html' %}
+
+        <title>Software</title>
+    </head>
+
+    <body class = "body">
+
+        {% include 'navbar.html'%}
+
+    <main role="main">
+
+        <!-- Show Results and Errors -->
+        <div class="container">
+
+            <!-- Check input variables for errors -->
+            {{ errors | safe }}
+
+            {% if result %}
+                <div class="row mt-3">
+                    <div class="col">
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <h4 class="alert-heading">Well done!</h4>
+                            <p class="font-weight-light text-justify">
+                                DrDiff successfully read your trajectory input file (<em>Q(t) = {{ filename }}</em>) and generated the following results and plots.
+                                You can also <a href="/outputs/{{ zipfile }}">DOWNLOAD</a> the results in text file format.</p>
+                            <hr>
+                            <p class="font-weight-light text-justify mb-0">Your job has ID {{ runId }}. Please, <b>wait</b> for the plots to be loaded!</p>
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Plots model will be shown here -->
+                <div class="row py-2">
+                    <div class="col">
+
+                        <h2 class="font-weight-light">Results</h2>
+
+                        <div class="mx-auto">
+                            <img width="520" src="/outputs/{{ out_traj }}" class="mx-auto p-4" alt="trajectory">
+                        </div>
+
+                        {{ result | safe }}
+
+                    </div>
+                </div>
+
+                <!-- Table with transition times will be shown here -->
+                <div class="row py-2">
+                    <div class="col">
+                        <h2 class="font-weight-light">Transition times</h2>
+                        <small class="form-text text-muted">
+                            You can readjust your transition state (TS) boundaries [Q<sub>initial</sub>, Q<sub>final</sub>] in the <a href="#Analyze" class="text-decoration-none"> panel below </a> for a better estimation.
+                        </small>
+                        <p></p>
+
+                        <span class="small py-2">
+                        <table class="table table-striped table-borderless">
+                            <!--thead>
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">time</th>
+                            </tr>
+                        </thead-->
+                            <tbody>
+                                {% for key, value in transition_times_dict.items() %}
+                                    <tr>
+                                        <th scope="row"> {{ key }} </th>
+                                        <td> {{ value | round(5, 'common') }} </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        </small>
+                    </div>
+                </div>
+
+            {% endif %}
+        </div>
+        <!-- END of Results -->
+
+        <div class="container">
+
+            <form action="." method="POST" enctype="multipart/form-data">
+
+            <!-- UPLOAD Q(t) -->
+            <div class="row align-items-center">
+
+                <!-- Hide Q(t) image example if results -->
+                {% if not result %}
+
+                    <div class="col-6 mx-auto col-md-6 order-md-2">
+                        <img height="350" src="{{url_for('static', filename='trajectory1_nolegend2.svg')}}" class="img-fluid rounded mx-auto d-block p-4" alt="trajectory">
+                    </div>
+
+                {% endif %}
+
+                {% if result %}
+
+                    <div class="col">
+
+                {% else %}
+
+                    <div class="col-md-6 order-md-1 text-center text-md-left pr-md-5">
+
+                {% endif %}
+
+                    <h1 class="font-weight-light" style="padding-top: 1.5rem;" id="Analyze">Analyze your trajectory</h1>
+                    <p class="lead mb-4 py-2"><b>UPLOAD</b> the trajectory file <span class="badge badge-dark">Q(t)</span>
+                    that you want to analyse. <span class="badge badge-warning">Remember</span> to upload a file up to 20 MB with one column as the <a href={{url_for('static', filename='Q1.dat')}} class="text-decoration-none">example</a>. And wait a little bit for the results.
+                    <!--to use extensions .dat or .txt-->
+                    <!--
+                    free-energy profile <span class="badge badge-success">F(Q)</span>,
+                    folding <span class="badge badge-success">&tau;<sub>f</sub></span>
+                    and transition path times <span class="badge badge-success">&tau;<sub>TP</sub></span>
+                    by determining the coordinate-dependent drift-velocity <span class="badge badge-success">v(Q)</span>
+                    and diffusion <span class="badge badge-success">D(Q)</span> coefficients. -->
+                    </p>
+                    <p class="mb-mt-4">
+                        <div class="form-group">
+
+                            <input type="file" id="inputFile01" name="inputFile01" class="form-control-file">
+                            <label><small class="form-text text-muted">One-column file with Q's.
+                            </small></label>
+
+                        </div>
+
+                    </p>
+                </div>
+
+            </div> <!-- END of UPLOAD -->
+
+            <!-- Do calculation -->
+            <div class="row py-2">
+                <div class="col">
+
+                    <!-- collapse default options -->
+                    <a class="text-primary py-2 d-block text-decoration-none font-weight-light" data-toggle="collapse" href="#collapseOptions" role="button" aria-expanded="false" aria-controls="collapseOptions">
+                    <i class="fas fa-angle-double-down"></i>
+                    <span class="badge badge-info">CHANGE</span> default parameters for your trajectory Q(t)!
+                    </a>
+                    <div class="collapse" id="collapseOptions">
+                        <div class="card card-body border-0 bg-light">
+                            <!--small><p class="font-weight-light text-justify">
+                                %% Any message %%
+                            </small></p-->
+
+                            <div class="form-group row">
+                                <label for="beta" class="col-sm-3 col-form-label font-weight-light"><em>&beta;</em></label>
+                                <div class="col-sm">
+                                    <input class="form-control" id="beta" name="beta" placeholder="1" value="1">
+                                    <small id="inputSnapshotHelp" class="form-text text-muted">
+                                        <em>&beta; = 1/k<sub>B</sub>T</em>, with <em>T</em> been the temperature of <em>Q(t)</em>.
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <label for="EquilibrationSteps" class="col-sm-3 col-form-label font-weight-light">Equilibration</label>
+                                <div class="col-sm">
+                                    <input class="form-control" type="number" id="EquilibrationSteps" name="EquilibrationSteps" placeholder="100 steps" value="100" min="0">
+                                    <small id="inputEqHelp" class="form-text text-muted">Ignore the first Equilibration lines from the beginning of traj file.</small>
+                                </div>
+                            </div>
+
+                            <p class="font-weight-light text-justify"> Transition state (TS) boundaries in the range [Q<sub>initial</sub>, Q<sub>final</sub>]:</p>
+                            <div class="form-group row">
+                                <label for="Q_zero" class="col-sm-3 col-form-label font-weight-light"><em>Q<sub>initial</sub></em></label>
+                                <div class="col-sm">
+                                    <input class="form-control" id="Q_zero" name="Q_zero" placeholder="80" value="80">
+                                    <!--small id="inputQzeroHelp" class="form-text text-muted">The ...</small-->
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="Q_one" class="col-sm-3 col-form-label font-weight-light"><em>Q<sub>final</sub></em></label>
+                                <div class="col-sm">
+                                    <input class="form-control" id="Q_one" name="Q_one" placeholder="230" value="230">
+                                    <small id="inputQoneHelp" class="form-text text-muted">
+                                        The TS boundaries are applied to calculate transition times (&tau;<sub>f</sub> and &tau;<sub>TP</sub>) in this range.
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <label for="Qbins" class="col-sm-3 col-form-label font-weight-light">Q bin width</label>
+                                <div class="col-sm">
+                                    <input class="form-control" type="number" id="Qbins" name="Qbins" placeholder="1" value="1" min="1">
+                                    <small id="inputQbinHelp" class="form-text text-muted">Estimated bin width of the reaction coordinate for the output files.</small>
+                                </div>
+                            </div>
+
+                            <p class="font-weight-light text-justify"> Time (t) will be given by <em>(Timestep)*(Snapshot)</em>:</p>
+                            <div class="form-group row">
+                                <label for="timestep" class="col-sm-3 col-form-label font-weight-light">Timestep (ps)</label>
+                                <div class="col-sm">
+                                    <input class="form-control" id="timestep" name="timestep" placeholder="0.0005" value="0.0005">
+                                    <small id="inputTimestepHelp" class="form-text text-muted">
+                                        The time step used to generate the reaction coordinate. Example: timestep = 0.0005 ps in a coarse-grain C<sub>&alpha;</sub>-model simulation in Gromacs.
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="tmin" class="col-sm-3 col-form-label font-weight-light">Snapshot</label>
+                                <div class="col-sm">
+                                    <input class="form-control" type="number" id="Snapshot" name="Snapshot" placeholder="50" value="50" min="1">
+                                    <small id="inputSnapshotHelp" class="form-text text-muted">
+                                        Snapshot used to record the coordinate trajectory file <em>Q(t)</em>.
+                                    </small>
+                                </div>
+                            </div>
+
+                            <p class="font-weight-light text-justify"> <em>&Delta;t = [t<sub>initial</sub>,t<sub>final</sub>] <!--t<sub>final</sub> - t<sub>initial</sub--></em>:</p>
+                            <div class="form-group row">
+                                <label for="tmin" class="col-sm-3 col-form-label font-weight-light"><em>t<sub>initial</sub></em></label>
+                                <div class="col-sm">
+                                    <input class="form-control" type="number" id="tmin" name="tmin" placeholder="2" value="2" min="2">
+                                    <!--small id="inputTminHelp" class="form-text text-muted">The histograms collected are then fitted to Gaussian distributions.
+                                        Standard deviations (<em>&sigma;(t)</em>) and distribution centers (<em>Q<sub>c</sub>(t)</em>) are record for the shooting times in the range <em>[t<sub>initial</sub>,t<sub>final</sub>]</em>.
+                                    </small-->
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="tmax" class="col-sm-3 col-form-label font-weight-light"><em>t<sub>final</sub></em></label>
+                                <div class="col-sm">
+                                    <input class="form-control" type="number" id="tmax" name="tmax" placeholder="6" value="6" min="3">
+                                    <small id="inputTHelp" class="form-text text-muted">The histograms collected are then fitted to Gaussian distributions.
+                                        Standard deviations (<em>&sigma;(t)</em>) and distribution centers (<em>Q<sub>c</sub>(t)</em>) are record for the shooting times in the range <em>[t<sub>initial</sub>,t<sub>final</sub>]</em>.
+                                    </small>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                    <!-- /collapse default options -->
+
+                    <div class="form-group row justify-content-center">
+                        <div class="col text-center text-md-left py-3">
+
+                            <button type="submit" class="btn btn-lg btn-success justify-content-center mb-mt-4">Run DrDiff!</button>
+
+                        </div>
+                     </div>
+
+                </div>
+            </div><!-- Do calculation -->
+
+            </form>
+
+        </div><!-- /.container -->
+
+    </main>
+
+
+        {% include 'footer.html' %}
+
+        <!-- Optional JavaScript -->
+        <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+        {% include 'bootstrapJS.html' %}
+
+    </body>
+</html>

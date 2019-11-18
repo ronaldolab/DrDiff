@@ -1,0 +1,88 @@
+<footer class="card-footer mt-auto py-3 bg-dark text-white font-weight-light">
+<small>
+    <div class="container">
+
+        <div class="row">
+            <div class="col-md-4">
+                <div class="text-white mb-4 ml-md-4">
+                    <h5 class="font-weight-light">
+                        <img src="{{url_for('static', filename='logo1.svg')}}" width="30" height="30" class="d-inline-block align-middle" alt="ronaldolab">
+                        DrDiff
+                    </h5>
+                    <p class="font-weight-light">Stochastic Drift-Diffusion Framework</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="text-white mb-4 ml-md-4">
+                    <h5 class="font-weight-light">
+                        Menu
+                    </h5>
+                    <ul class="list-unstyled">
+                        <li><a href="{{ url_for('about') }}"    class="text-white py-2 d-block text-decoration-none">About</a></li>
+                        <li><a href="{{ url_for('software') }}" class="text-white py-2 d-block text-decoration-none">Software</a></li>
+                        <li><a href="{{ url_for('download') }}"     class="text-white py-2 d-block text-decoration-none">Download</a></li>
+                        <li><a href="{{ url_for('cite') }}"     class="text-white py-2 d-block text-decoration-none">Cite</a></li>
+                        <li><a href="{{ url_for('team') }}"     class="text-white py-2 d-block text-decoration-none">Team</a></li>
+                        <!--li><a target="_blank" href="https://ronaldolab.tk/" class="text-white py-2 d-block text-decoration-none">Ronaldolab</a></li-->
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="text-white mb-4 ml-md-4">
+                    <h5 class="font-weight-light">
+                        Connect
+                    </h5>
+                    <div class="block-23 mb-3">
+                        <ul class="list-unstyled list-group fa-ul">
+                            <li><a href="mailto:drdiff.info@gmail.com" class="text-white py-2 d-block text-decoration-none">
+                                <span class="fa-li"><i class="fas fa-envelope"></i></span>
+                                <span class="text">drdiff.info@gmail.com</span>
+                                </a>
+                            </li>
+                            <li><span class="fa-li"><i class="fas fa-map-marker"></i></span>
+                                <span class="text">
+                                    Av. Dr. Randolfo Borges Jr, 1400,
+                                    Parque Tecn&oacute;logico da Univerdecidade,
+                                    Uberaba, MG, Brazil,
+                                    38064-200
+                                </span>
+                            </li>
+                            <li>
+                                <!--span class="fa-li" style="font-size: 2rem;"><i class="fas fa-hashtag"></i></span-->
+                                <a target="_blank" href="https://github.com/ronaldolab" class="text-white text-decoration-none"><span style="font-size: 1.5rem;"><i class="fab fa-github">&nbsp;</i></span></a>
+                                <a target="_blank" href="http://www.facebook.com/ronaldojunio" class="text-white text-decoration-none"><span style="font-size: 1.5rem;"><i class="fab fa-facebook">&nbsp;</i></span></a>
+                                <a target="_blank" href="https://www.youtube.com/user/ronaldojuniotube" class="text-white text-decoration-none"><span style="font-size: 1.5rem;"><i class="fab fa-youtube">&nbsp;</i></span></a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!--div class="row justify-content-center">
+            <div class="col justify-content-center">
+                <a target="_blank" href="http://dgp.cnpq.br/dgp/espelhogrupo/7037702624917605" class="text-white text-decoration-none"><span style="font-size: 1.5rem;"><img height="50" src="{{url_for('static', filename='dgp.png')}}" class="rounded mx-auto d-block" alt="DGP"></span></a>
+            </div>
+            <div class="col justify-content-center">
+                <a target="_blank" href="http://lattes.cnpq.br/9945821072452088" class="text-white text-decoration-none"><span style="font-size: 1.5rem;"><img height="50"  src="{{url_for('static', filename='lattes.png')}}" class="rounded mx-auto d-block" alt="Lattes"></span></a>
+            </div>
+            <div class="col justify-content-center">
+                <a target="_blank" href="http://uftm.edu.br" class="text-white text-decoration-none"><span style="font-size: 1.5rem;"><img height="50"  src="{{url_for('static', filename='uftm.png')}}" class="rounded mx-auto d-block" alt="UFTM"></span></a>
+            </div>
+        </div>
+        <br-->
+
+        <div class="row justify-content-center">
+
+            <small>
+                <span class="text-white">Copyright &copy; <script>
+                  document.write(new Date().getFullYear());
+                    </script> | All rights reserved. Made with <i class="fas fa-heart"></i> for Flask | Python3 | MySQL | Bootstrap.</span>
+            <small>
+        </div>
+
+	</div>
+</small>
+</footer>
