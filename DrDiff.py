@@ -471,7 +471,7 @@ def main():
     np.savetxt('VQ' + filename + '.dat', VQ)
 
     #to calculate F_{Stochastic}
-    Z = np.stack((DQ[:,0], VQ[:,1]/DQ[:,1], np.sqrt(np.square(DQ[:,2])+np.square(VQ[:,2]))), axis=-1)
+    Z = np.stack((DQ[:,0], np.divide(VQ[:,1], DQ[:,1]), np.sqrt(np.square(DQ[:,2])+np.square(VQ[:,2]))), axis=-1)
     Z = excludeinvalid(Z)
     W = np.stack((Z[:,0], integrate.cumtrapz(Z[:,1], Z[:,0], initial=Z[:,1][0]), Z[:,2]), axis=-1)
     W = excludeinvalid(W)
@@ -511,7 +511,7 @@ def main():
     Qqzero = Q_zero
     Qqone = Q_one
 
-    if Qqzero>Qqone: Qqzero, Qqone=Qqone, Qqzero # Must be Qqzero < Qqone
+    if Qqzero > Qqone: Qqzero, Qqone = Qqone, Qqzero # Must be Qqzero < Qqone
 
     ttaufold, uncerttaufold = calctau(beta, Qmin, Qqzero, Qqone, DQ, G)
     ttauunfold, uncerttauunfold = calctau(beta, Qmax, Qqone, Qqzero, DQ, G)
