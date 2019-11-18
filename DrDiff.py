@@ -296,7 +296,7 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
 
         #Inner integral
         inttau = integrate.cumtrapz(tau[:,1], tau[:,0], axis=0, initial=tau[0,1])[-1] #inner integral
-        uncertau = inttau*np.sqrt(np.mean(np.square(excludeinvalid1D(tau[:,2]/tau[:,1])))) #estimating error in inner integral
+        uncertau = inttau*np.sqrt(np.mean(np.square(excludeinvalid(tau[:,2]/tau[:,1])))) #estimating error in inner integral
         taul = np.append(taul, [[Qj, inttau, uncertau]], axis=0)
         taul = excludeinvalid(taul)
 
