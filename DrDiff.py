@@ -726,6 +726,7 @@ def do_calculation(runId, path,
         Q_one = (Qmax - 0.2*abs(Qmax))
         #print('The transition state boundary was mischoosed. Your new transition state boundaries are = ', Q_zero, ' and ', Q_one)
     else:
+        pass
         #print('The analysis will start.')
     # Number of bins for the reaction coordinate, Q
     nbins = np.int(np.ceil((Qmax-Qmin)/Qbins))
