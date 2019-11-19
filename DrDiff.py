@@ -1,48 +1,48 @@
 # coding: utf8
 ################################################################################
-#
-# Calculate, using the Stochastic Drift-Diffusion Approach, the:
-#
-#   - Diffusion coefficient:                D(Q)
-#   - Free-Energy profiles:                 G(Q), F(Q)
-#   - Folding/unfolding times:              \tau_f, \tau_u
-#   - Transition Folding/unfolding times:   \tau_TS_f, \tau_TS_u
-#
-#
-# Contribute by:
-#   Frederico Campos Freitas:       frederico.freitas   @uftm.edu.br
-#   Vinícius de Godoi Contessoto:   vinicius.contessoto @gmail.com
-#   Ronaldo Junio de Oliveira:      ronaldo.oliveira    @uftm.edu.br
-#
-#
-# HOW TO RUN:
-#
-# In the python3 environment, import the DrDiff class and execute
-# the do_calculation method
-#
-# python3.6
-# from DrDiff import do_calculation
-# do_calculation(userid)
-#
-#
-# Trajectory file:
-#
-# Trajectories are stored in the trajectories folder in the main dir by naming
-# the file as userid_traj with just one column, the reaction coordinate data
-#
-#
-# Output files:
-#
-# Outputs will be in the output dir with files userid_*
-#
-# Python3 libraries are required:
-# numpy, scipy and itertools
-#
-#
-# Connect with us by email: drdiff.info@gmail.com
-#
-#                   ##    GOOD LUCK    ##
-#
+#                                                                              #
+# Calculate, using the Stochastic Drift-Diffusion Approach, the:               #
+#                                                                              #
+#   - Diffusion coefficient:                D(Q)                               #
+#   - Free-Energy profiles:                 F_stochastic(Q), F_equilibrium(Q)  #
+#   - Folding/unfolding times:              \tau_f, \tau_u                     #
+#   - Transition Folding/unfolding times:   \tau_TS_f, \tau_TS_u               #
+#                                                                              #
+#                                                                              #
+# Contribute by:                                                               #
+#   Frederico Campos Freitas:       fredcfreitas        @gmail.com             #
+#   Vinícius de Godoi Contessoto:   vinicius.contessoto @gmail.com             #
+#   Ronaldo Junio de Oliveira:      ronaldo.oliveira    @uftm.edu.br           #
+#                                                                              #
+#                                                                              #
+# HOW TO RUN:                                                                  #
+#                                                                              #
+# In the python3 environment, import the DrDiff class and execute              #
+# the do_calculation method                                                    #
+#                                                                              #
+# python3.6                                                                    #
+# from DrDiff import do_calculation                                            #
+# do_calculation(userid)                                                       #
+#                                                                              #
+#                                                                              #
+# Trajectory file:                                                             #
+#                                                                              #
+# Trajectories are stored in the trajectories folder in the main dir by naming #
+# the file as userid_traj with just one column, the reaction coordinate data   #
+#                                                                              #
+#                                                                              #
+# Output files:                                                                #
+#                                                                              #
+# Outputs will be in the output dir with files userid_*                        #
+#                                                                              #
+# Python3 libraries are required:                                              #
+# numpy, scipy and itertools                                                   #
+#                                                                              #
+#                                                                              #
+# Connect with us by email: drdiff.info@gmail.com                              #
+#                                                                              #
+#                   ##    GOOD LUCK    ##                                      #
+#                                                                              #
 ################################################################################
 
 import numpy as np
@@ -57,10 +57,10 @@ import matplotlib.pyplot as plt
 import os
 import csv
 
-##################################################################################################
-# Method to print Free Energy and the Histogram to data file
-#   F(Q) = - np.log [number-of-states(Q)]
-##################################################################################################
+################################################################################
+# Method to print Free Energy and the Histogram to data file                   #
+#   F(Q) = - np.log [number-of-states(Q)]                                      #
+################################################################################
 def Free_energy_Histogram_Q(Qf,nbins,beta):
 
     #Histogram calculation
@@ -89,13 +89,13 @@ def Free_energy_Histogram_Q(Qf,nbins,beta):
 
     return Free
 
-##################################################################################################
+################################################################################
 
 
-##################################################################################################
-# Method to print Histogram of t stes to data file
-#
-##################################################################################################
+################################################################################
+# Method to print Histogram of t stes to data file                             #
+#                                                                              #
+################################################################################
 def Jump_Histogram(filename,Qf):
 
     # Histogram calculation
@@ -109,10 +109,10 @@ def Jump_Histogram(filename,Qf):
 
     return np.c_[bins_center,hist]
 
-##################################################################################################
+################################################################################
 
 ################################################################################
-# Method to exclude invalid values
+# Method to exclude invalid values                                             #
 ################################################################################
 
 def excludeinvalid(M):
@@ -122,10 +122,10 @@ def excludeinvalid(M):
     return M
 ################################################################################
 
-##################################################################################################
-# Method to calculate D(Q) and v(Q)
-#
-##################################################################################################
+################################################################################
+# Method to calculate D(Q) and v(Q)                                            #
+#                                                                              #
+################################################################################
 def CalculateD_V (Q, Qmin, Qmax, Qbins, nbins, tmin, tmax, CorrectionFactor):
 
     DQ = np.empty(shape=(0, 3))
@@ -185,10 +185,10 @@ def CalculateD_V (Q, Qmin, Qmax, Qbins, nbins, tmin, tmax, CorrectionFactor):
     return DQ, VQ
 
 
-##################################################################################################
-# Method to calculate Free Energy using D(Q) and v(Q)
-#   F_stochastic (Q) = G (Q)
-##################################################################################################
+################################################################################
+# Method to calculate Free Energy using D(Q) and v(Q)                          #
+#   F_stochastic (Q) = G (Q)                                                   #
+################################################################################
 def Free_energy_Stochastic_Q(DQ, VQ, beta):
     Z = np.stack((DQ[:,0], np.divide(VQ[:,1], DQ[:,1]), np.sqrt(np.square(DQ[:,2])+np.square(VQ[:,2]))), axis=-1)
     Z = excludeinvalid(Z)
@@ -229,10 +229,10 @@ def Free_energy_Stochastic_Q(DQ, VQ, beta):
 
     return G
 
-##################################################################################################
-# Method to calculate t_{folding} using Kramers equation
-#
-##################################################################################################
+################################################################################
+# Method to calculate t_{folding} using Kramers equation                       #
+#                                                                              #
+################################################################################
 def calctau(beta, Qinit, Qzero, Qone, DQ, G):
 
     utau    = 0
@@ -305,13 +305,13 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
     uncerttaul = inttaul*np.sqrt(np.amax(np.square(excludeinvalid(taul[:,2]/taul[:,1])))) #estimating error in inner integral
     return inttaul, uncerttaul
 
-##################################################################################################
+################################################################################
 
 
-##################################################################################################
-# Method to calculate analytical mtpt
-#
-##################################################################################################
+################################################################################
+# Method to calculate analytical mtpt                                          #
+#                                                                              #
+################################################################################
 def calcmtpt(beta,Qzero,Qone,DQ,G):
 
     DQ = np.asarray(DQ)
@@ -336,16 +336,16 @@ def calcmtpt(beta,Qzero,Qone,DQ,G):
     unmtpt = np.absolute(inttpt)*np.sqrt(np.mean(np.square(excludeinvalid(np.divide(vlint[:,2], vlint[:,1])))) + np.mean(np.square(excludeinvalid(np.divide(vrint[:,2], vrint[:,1])))))
     return inttpt, unmtpt
 
-##################################################################################################
+################################################################################
 
 
-##################################################################################################
-# Equation for mtpt - right integral
-#
-##################################################################################################
-def rcoreint(irow, jrow, G, DQ, beta, GQ1, Qx, Qzero, Qone):
+################################################################################
+# Equation for mtpt - right integral                                           #
+#                                                                              #
+################################################################################
+def rcoreint(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
     # Calculate rintegral
-    val = np.divide(((np.exp(beta*(GQ1))), (float(DQ[np.int(irow[0]), 1]))))
+    val = np.divide((np.exp(beta*(GQ1))), (float(DQ[np.int(irow[0]), 1])))
     #Using max uncertainty evaluated in both integral combinations as the final uncertainty
     if np.not_equal(float(DQ[np.int(irow[0]), 1]), 0):
         uncert = np.absolute(val)*(np.sqrt(np.square(beta)*np.square(unc)+np.square(np.divide(float(DQ[np.int(irow[0]), 2]), float(DQ[np.int(irow[0]), 1])))))
@@ -353,14 +353,14 @@ def rcoreint(irow, jrow, G, DQ, beta, GQ1, Qx, Qzero, Qone):
         uncert = 0
     return val, uncert
 
-##################################################################################################
+################################################################################
 
 
-##################################################################################################
-# Equation for mtpt - left integral
-#
-##################################################################################################
-def lcoreint(irow,jrow,G,DQ,beta,GQ1,Qx,Qzero,Qone):
+################################################################################
+# Equation for mtpt - left integral                                            #
+#                                                                              #
+################################################################################
+def lcoreint(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
 
     xphi, unphi = phi(beta, Qzero, Qone, DQ, G, Qx)
 
@@ -374,13 +374,13 @@ def lcoreint(irow,jrow,G,DQ,beta,GQ1,Qx,Qzero,Qone):
         uncert = 0
     return val, uncert
 
-##################################################################################################
+################################################################################
 
 
-##################################################################################################
-# Method to \phi(x)
-#
-##################################################################################################
+################################################################################
+# Method to \phi(x)                                                            #
+#                                                                              #
+################################################################################
 def phi(beta,Qzero,Qone,DQ,G,qx):
 
     DQ          = np.asarray(DQ)
@@ -400,13 +400,13 @@ def phi(beta,Qzero,Qone,DQ,G,qx):
 
     return phix, uncphi
 
-##################################################################################################
+################################################################################
 
 
-##################################################################################################
-# Method to evaluate values to a simple integral
-#
-##################################################################################################
+################################################################################
+# Method to evaluate values to a simple integral                               #
+#                                                                              #
+################################################################################
 def simpleint(calctest,funcion,beta,Qzero,Qone,G,DQ):
 
     G = excludeinvalid(G)
@@ -437,13 +437,13 @@ def simpleint(calctest,funcion,beta,Qzero,Qone,G,DQ):
 
     return sampledvalues
 
-##################################################################################################
+################################################################################
 
 
-##################################################################################################
-# Method to calculate core of \phi(x) integral
-#
-##################################################################################################
+################################################################################
+# Method to calculate core of \phi(x) integral                                 #
+#                                                                              #
+################################################################################
 def equationphi(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
 
     # Calculating phi core
@@ -454,12 +454,12 @@ def equationphi(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
         uncert = 0
     return val, uncert
 
-##################################################################################################
+################################################################################
 
-##################################################################################################
-# Test to avoid invalid values and evaluate the chosen equation
-#
-##################################################################################################
+################################################################################
+# Test to avoid invalid values and evaluate the chosen equation                #
+#                                                                              #
+################################################################################
 def testcalc(eq, irow, jrow, G, DQ, beta, Qx, Qzero, Qone):
 
     eval = 0
@@ -477,13 +477,13 @@ def testcalc(eq, irow, jrow, G, DQ, beta, Qx, Qzero, Qone):
         uncer = 0
     return eval, uncer
 
-##################################################################################################
+################################################################################
 
 
-##################################################################################################
-# Method to calculate mfpt, mtpt and number of transitions from trajectory
-#
-##################################################################################################
+################################################################################
+# Method to calculate mfpt, mtpt and number of transitions from trajectory     #
+#                                                                              #
+################################################################################
 def calcttrajectory(Qzero,Qone,Qtr):
 
     tAB = tBA = tTP = nAB = nBA = t0  = t1 = t2 = 0
@@ -558,8 +558,12 @@ def calcttrajectory(Qzero,Qone,Qtr):
     #np.savetxt('Results.dat',resultsAB) #to print results matrix in a file
     return tAB,tBA,nTPAB,tTPAB,nTPBA,tTPBA,nAB,nBA,nTP,tTP,stdtAB,stdtBA,stdtTPAB,stdtTPBA
 
+################################################################################
 
-# Plot the trajectory Q in a svg figure with matplotlib
+################################################################################
+# Plot the trajectory Q in a svg figure with matplotlib                        #
+#                                                                              #
+################################################################################
 def plot_Q(Q, output_file_Q):
 
     # # Average over trajectory (# TODO: It is returning error:
@@ -583,7 +587,12 @@ def plot_Q(Q, output_file_Q):
 
     return
 
-# Plot the trajectory Q in a svg figure with Plotly
+################################################################################
+
+################################################################################
+# Plot the trajectory Q in a svg figure with Plotly                            #
+#                                                                              #
+################################################################################
 def plotly_Q(Q, output_file_Q,  Q_zero, Q_one):
 
     #pio.orca.config.executable = '/usr/local/bin/orca'
@@ -660,16 +669,18 @@ def plotly_Q(Q, output_file_Q,  Q_zero, Q_one):
 
     return
 
+################################################################################
 
-##################################################################################################
-#
-# Main method for the Stochastic Diffusion algorithm
-#
-#   Trajectories are in the /tmp folder
-#   Outputs will be in the /tmp output folder as runrid_*
-#
-# this definition is for the form from the main.py website framework
-#
+################################################################################
+#                                                                              #
+# Main method for the Stochastic Diffusion algorithm                           #
+#                                                                              #
+#   Trajectories are in the /tmp folder                                        #
+#   Outputs will be in the /tmp output folder as runrid_*                      #
+#                                                                              #
+# this definition is for the form from the main.py website framework           #
+#                                                                              #
+################################################################################
 def do_calculation(runId, path,
     filename, OUTPUT_FOLDER,
     beta,Eq,Q_zero,Q_one,Qbins,time_step,Snapshot,tmin,tmax):
@@ -813,3 +824,5 @@ def do_calculation(runId, path,
 
 
     return (dict_times, out_file_Q, error)
+    
+################################################################################
