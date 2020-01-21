@@ -58,6 +58,16 @@ import os
 import csv
 
 ################################################################################
+# Method to load the trajectory skipping the first Eq values                   #
+#                                                                              #
+################################################################################
+def extract_trajectory(file, Eq):
+    return np.asarray([float(line.rstrip()) for line in islice(f, Eq, None)])
+
+################################################################################
+
+
+################################################################################
 # Method to print Free Energy and the Histogram to data file                   #
 #   F(Q) = - np.log [number-of-states(Q)]                                      #
 ################################################################################
@@ -712,8 +722,7 @@ def do_calculation(runId, path,
         error += 'I/O error. %s' % errno
         return (errno, error)
 
-    # Save the coordinate value skipping the Eq equilibration steps
-    Q    = np.asarray([float(line.rstrip()) for line in islice(f, Eq, None)])
+    Q    =  Q = extract_trajectory(f, Eq)
 
     # Save a figure in svg for the website
     #out_file_Q = path + '/static/trajectories/' + str(runId) + '_traj.svg'
@@ -824,5 +833,5 @@ def do_calculation(runId, path,
 
 
     return (dict_times, out_file_Q, error)
-    
+
 ################################################################################
