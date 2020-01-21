@@ -165,7 +165,7 @@ def CalculateD_V(Q, Qmin, Qmax, Qbins, nbins, tmin, tmax, CorrectionFactor):
     for Qi in binscenter:
 
         # Find the Value of Qi with a bin in trajectory
-        Q_index = np.array(np.where( (Qi + Qbins > Q) & (Qi - Qbins < Q)))[0]
+        Q_index = np.array(np.where((Qi + Qbins > Q) & (Qi - Qbins < Q)))[0]
 
         D = np.empty(shape=(0, 2))
         V = np.empty(shape=(0, 2))
@@ -291,7 +291,7 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
 
             krow, kcol = np.where(G == Qk)
 
-            if (np.not_equal(np.size(irow), 0) and np.not_equal(np.size(jrow), 0) and np.not_equal(np.size(krow), 0)):
+            if np.not_equal(np.size(irow), 0) and np.not_equal(np.size(jrow), 0) and np.not_equal(np.size(krow), 0):
                 if not ((abs(float(G[np.int(jrow[0]), 1])) >= (abs(np.nanmean(G, axis=0)[1])+abs(3*np.nanstd(G, axis=0)[1]))) or (abs(float(G[np.int(jrow[0]), 1])) <= (abs(np.nanmean(G, axis=0)[1]) - abs(3*np.nanstd(G, axis=0)[1])))):
                     GQ1 = (float(G[np.int(jrow[0]), 1]))
                     err1 = (float(G[np.int(jrow[0]), 2]))
@@ -471,7 +471,11 @@ def equationphi(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
     # Calculating phi core
     val = np.divide((np.exp(np.multiply(beta, (GQ1)))), (float(DQ[np.int(irow[0]), 1])))
     if float(DQ[np.int(irow[0]), 1]) != 0:
-        uncert = np.multiply(np.absolute(val), (np.sqrt(np.multiply(np.square(beta), np.square(unc)) + np.square(np.divide(float(DQ[np.int(irow[0]), 2]),float(DQ[np.int(irow[0]), 1]))))))
+        uncert = np.multiply(np.absolute(val),
+                            (np.sqrt(np.multiply(np.square(beta),
+                            np.square(unc)) +
+                            np.square(np.divide(float(DQ[np.int(irow[0]), 2]),
+                            float(DQ[np.int(irow[0]), 1]))))))
     else:
         uncert = 0
     return val, uncert
@@ -486,7 +490,7 @@ def testcalc(eq, irow, jrow, G, DQ, beta, Qx, Qzero, Qone):
 
     eval = 0
 
-    if (np.size(irow) != 0 and np.size(jrow) != 0):
+    if np.size(irow) != 0 and np.size(jrow) != 0:
         if not ((abs(float(G[np.int(jrow[0]), 1])) >= (abs(np.nanmean(G, axis=0)[1])+abs(3*np.nanstd(G, axis=0)[1]))) or (abs(float(G[np.int(jrow[0]), 1])) <= (abs(np.nanmean(G, axis=0)[1])-abs(3*np.nanstd(G, axis=0)[1])))):
             GQ1  = (float(G[np.int(jrow[0]), 1]))
             unci = (float(G[np.int(jrow[0]), 2]))
@@ -594,7 +598,7 @@ def plot_Q(Q, output_file_Q):
     # window      = np.ones(window_size)/float(window_size)
     # Q_avg       = np.convolve(Q, window, 'same')
 
-    t           = np.linspace(0,np.size(Q),np.size(Q))
+    t = np.linspace(0,np.size(Q),np.size(Q))
 
     # Save svg figure
     figure = plt.figure()
@@ -602,8 +606,7 @@ def plot_Q(Q, output_file_Q):
     #ax.set_position([0, 0, 1, 1])
     ax.plot(t, Q)
     # ax.plot(t, Q_avg)
-    ax.set(xlabel='time, t', ylabel='reaction coordinate, Q',
-       title='Input trajectory file, Q(t)')
+    ax.set(xlabel = 'time, t', ylabel = 'reaction coordinate, Q', title = 'Input trajectory file, Q(t)')
     ax.grid()
     fig.savefig(output_file_Q, bbox_inches=0)
 
@@ -615,7 +618,7 @@ def plot_Q(Q, output_file_Q):
 # Plot the trajectory Q in a svg figure with Plotly                            #
 #                                                                              #
 ################################################################################
-def plotly_Q(Q, output_file_Q,  Q_zero, Q_one):
+def plotly_Q(Q, output_file_Q, Q_zero, Q_one):
 
     #pio.orca.config.executable = '/usr/local/bin/orca'
     #plotly.io.orca.config.executable = '/usr/local/bin/orca'
@@ -625,7 +628,7 @@ def plotly_Q(Q, output_file_Q,  Q_zero, Q_one):
     #window_size = int(np.size(Q)/20)
     #window      = np.ones(window_size)/float(window_size)
     #Q_avg       = np.convolve(Q, window, 'same')
-    t           = np.linspace(0,np.size(Q),np.size(Q))
+    t           = np.linspace(0, np.size(Q), np.size(Q))
 
     tmax = np.max(t)
     #tmin = np.min(t)
@@ -637,23 +640,21 @@ def plotly_Q(Q, output_file_Q,  Q_zero, Q_one):
 
     # Create a trace
     #TS
-    trace1 = go.Scatter(
-        x=t1+t_rev,
-        y=y_upper+y_lower,
-        fill='tozerox',
-        fillcolor='rgba(0,176,246,0.2)',
-        line=dict(color='rgba(255,255,255,0)'),
-        name='TS',
-        showlegend=True
-    )
+    trace1 = go.Scatter(x=t1+t_rev,
+                        y=y_upper+y_lower,
+                        fill='tozerox',
+                        fillcolor='rgba(0,176,246,0.2)',
+                        line=dict(color='rgba(255,255,255,0)'),
+                        name='TS',
+                        showlegend=True
+                       )
 
-    trace2 = go.Scatter(
-        x = t,
-        y = Q,
-        line=dict(color='red'),
-        name='Q(t)',
-        showlegend=True
-    )
+    trace2 = go.Scatter(x=t,
+                        y=Q,
+                        line=dict(color='red'),
+                        name='Q(t)',
+                        showlegend=True
+                       )
 
     #trace3 = go.Scatter(
     #    x = t,
@@ -667,22 +668,13 @@ def plotly_Q(Q, output_file_Q,  Q_zero, Q_one):
     #data = [trace1, trace2, trace3]
     data = [trace1, trace2]
 
-    layout = go.Layout(
-        title = "Input trajectory file, Q(t)",
-        xaxis=dict(
-            title='time, t',
-            zeroline=True,
-            showline=True,
-        ),
-        yaxis=dict(
-            title='reaction coordinate, Q'
-        ),
-        legend=dict(
-        x=0.9,
-        y=1),
-    )
+    layout = go.Layout(title="Input trajectory file, Q(t)",
+                       xaxis=dict(title='time, t', zeroline=True, showline=True,),
+                       yaxis=dict(title='reaction coordinate, Q'),
+                       legend=dict(x=0.9, y=1),
+                      )
 
-    fig = go.Figure(data = data, layout = layout)
+    fig = go.Figure(data=data, layout=layout)
 
     #pio.orca.status
 
@@ -723,7 +715,7 @@ def do_calculation(runId, path, filename, OUTPUT_FOLDER, beta, Eq, Q_zero, Q_one
 
     out_folder = OUTPUT_FOLDER
 
-    error=''
+    error = ''
 
     # Open trajectory file
     try:
@@ -732,7 +724,7 @@ def do_calculation(runId, path, filename, OUTPUT_FOLDER, beta, Eq, Q_zero, Q_one
         error += 'I/O error. %s' % errno
         return (errno, error)
 
-    Q    =  Q = extract_trajectory(f, Eq)
+    Q = extract_trajectory(f, Eq)
 
     # Save a figure in svg for the website
     #out_file_Q = path + '/static/trajectories/' + str(runId) + '_traj.svg'
@@ -751,34 +743,34 @@ def do_calculation(runId, path, filename, OUTPUT_FOLDER, beta, Eq, Q_zero, Q_one
     Qmin = np.min(Q)
 
     # Test if Q_zero and Q_min were assigned properly. If not, it will be used random values
-    if ((Q_zero < Qmin) or (Q_one > Qmax)):
-        Q_zero = (Qmin + 0.2*abs(Qmin))
-        Q_one = (Qmax - 0.2*abs(Qmax))
+    if (Q_zero < Qmin) or (Q_one > Qmax):
+        Q_zero = (Qmin + np.multiply(0.2, abs(Qmin)))
+        Q_one = (Qmax - np.multiply(0.2, abs(Qmax)))
         #print('The transition state boundary was mischoosed. Your new transition state boundaries are = ', Q_zero, ' and ', Q_one)
     else:
         pass
         #print('The analysis will start.')
     # Number of bins for the reaction coordinate, Q
-    nbins = np.int(np.ceil((Qmax-Qmin)/Qbins))
+    nbins = np.int(np.ceil(np.divide((Qmax - Qmin), Qbins)))
 
     # Calculate Free Energy F(Q) from histogram (bins_center)
-    Free = Free_energy_Histogram_Q(Q,nbins,beta)
+    Free = Free_energy_Histogram_Q(Q, nbins, beta)
 
     # Write FQ output file
-    np.savetxt(out_folder + 'Free_energy.dat',Free)
+    np.savetxt(out_folder + 'Free_energy.dat', Free)
 
     # Calculate D and v (Q)
-    DQ, VQ = CalculateD_V (Q, Qmin, Qmax, Qbins, nbins, tmin, tmax, CorrectionFactor)
+    DQ, VQ = CalculateD_V(Q, Qmin, Qmax, Qbins, nbins, tmin, tmax, CorrectionFactor)
 
     # Save D and V files
-    np.savetxt(out_folder + 'DQ.dat',DQ)
-    np.savetxt(out_folder + 'VQ.dat',VQ)
+    np.savetxt(out_folder + 'DQ.dat', DQ)
+    np.savetxt(out_folder + 'VQ.dat', VQ)
 
     # Calculate F_{Stochastic}, as G here
     G = Free_energy_Stochastic_Q(DQ, VQ, beta)
 
     # Save F_st
-    np.savetxt(out_folder + 'F_stoch_Q.dat',G)
+    np.savetxt(out_folder + 'F_stoch_Q.dat', G)
 
 
     # Module to extract lines with errors (Should be revised because it will run in the server)
@@ -805,26 +797,26 @@ def do_calculation(runId, path, filename, OUTPUT_FOLDER, beta, Eq, Q_zero, Q_one
     ttTP        = calcmtpt(beta, Qqzero, Qqone, DQ, G)
     ttTPb       = calcmtpt(beta, Qqone, Qqzero, DQ, G)
 
-    ctAB,ctBA,cnTPAB,ctTPAB,cnTPBA,ctTPBA,cnAB,cnBA,cnTP,ctTP,cstdtAB,cstdtBA,cstdtTPAB,cstdtTPBA = calcttrajectory(Qqzero,Qqone,Q)
+    ctAB, ctBA, cnTPAB, ctTPAB, cnTPBA, ctTPBA, cnAB, cnBA, cnTP, ctTP, cstdtAB, cstdtBA, cstdtTPAB, cstdtTPBA = calcttrajectory(Qqzero, Qqone, Q)
 
     # Dictionary for times
     dict_times = {'mfpt_AB from Kramers equation' : ttaufold,
-        'mfpt_BA from Kramers equation' : ttauunfold,
-        'mfpt_AB from trajectory' : CorrectionFactor*ctAB,
-        'std_AB from trajectory' : CorrectionFactor*cstdtAB,
-        'number of transitions_AB' : cnAB,
-        'mfpt_BA from trajectory' : CorrectionFactor*ctBA,
-        'std_BA from trajectory' : CorrectionFactor*cstdtBA,
-        'number of transitions_BA' : cnBA,
-        'average mfpt' : CorrectionFactor*(ctAB*cnAB+ctBA*cnBA)/(cnAB+cnBA),
-        'total number of transitions' : cnAB+cnBA,
-        'mtpt_AB from trajectory' : CorrectionFactor*ctTPAB,
-        'std_mtpt_AB from trajectory' : CorrectionFactor*cstdtTPAB,
-        'mtpt_BA from trajectory' : CorrectionFactor*ctTPBA,
-        'std_mtpt_BA from trajectory' : CorrectionFactor*cstdtTPBA,
-        'mtpt_AB from Szabo equation' : ttTP,
-        'mtpt_BA from Szabo equation' : ttTPb
-        }
+                  'mfpt_BA from Kramers equation' : ttauunfold,
+                  'mfpt_AB from trajectory' : CorrectionFactor*ctAB,
+                  'std_AB from trajectory' : CorrectionFactor*cstdtAB,
+                  'number of transitions_AB' : cnAB,
+                  'mfpt_BA from trajectory' : CorrectionFactor*ctBA,
+                  'std_BA from trajectory' : CorrectionFactor*cstdtBA,
+                  'number of transitions_BA' : cnBA,
+                  'average mfpt' : CorrectionFactor*(ctAB*cnAB+ctBA*cnBA)/(cnAB+cnBA),
+                  'total number of transitions' : cnAB+cnBA,
+                  'mtpt_AB from trajectory' : CorrectionFactor*ctTPAB,
+                  'std_mtpt_AB from trajectory' : CorrectionFactor*cstdtTPAB,
+                  'mtpt_BA from trajectory' : CorrectionFactor*ctTPBA,
+                  'std_mtpt_BA from trajectory' : CorrectionFactor*cstdtTPBA,
+                  'mtpt_AB from Szabo equation' : ttTP,
+                  'mtpt_BA from Szabo equation' : ttTPb
+                 }
 
     # write dict_times to file
     timesfilename = str(out_folder + 'transition_times.csv')
@@ -837,9 +829,9 @@ def do_calculation(runId, path, filename, OUTPUT_FOLDER, beta, Eq, Q_zero, Q_one
     f_dict.close()
 
     # write parameters input to a log file
-    X = [beta,Eq,Q_zero,Q_one,Qbins,time_step,Snapshot,tmin,tmax]
-    np.savetxt(out_folder + 'input_parameters.log', X, delimiter = ',',
-        header = "[beta,EquilibrationSteps,Q_zero,Q_one,Qbins,time_step,Snapshot,tmin,tmax]")
+    X = [beta, Eq, Q_zero, Q_one, Qbins, time_step, Snapshot, tmin, tmax]
+    np.savetxt(out_folder + 'input_parameters.log', X, delimiter=',',
+               header="[beta, EquilibrationSteps, Q_zero, Q_one, Qbins, time_step, Snapshot, tmin, tmax]")
 
 
     return (dict_times, out_file_Q, error)
