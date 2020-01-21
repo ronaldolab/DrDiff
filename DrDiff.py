@@ -45,17 +45,18 @@
 #                                                                              #
 ################################################################################
 
-import numpy as np
+#import os
+import csv
 from itertools import islice
+import numpy as np
 from scipy import stats
 from scipy import integrate
-from scipy.signal import argrelmin
-from scipy.signal import savgol_filter
+#from scipy.signal import argrelmin
+#from scipy.signal import savgol_filter
 import matplotlib.pyplot as plt
 #import plotly.graph_objs as go  # remove this and add matplotlib
 #import plotly.io as pio         # remove this
-import os
-import csv
+
 
 ################################################################################
 # Method to load the trajectory skipping the first Eq values                   #
@@ -71,25 +72,25 @@ def extract_trajectory(file, Eq):
 # Method to print Free Energy and the Histogram to data file                   #
 #   F(Q) = - np.log [number-of-states(Q)]                                      #
 ################################################################################
-def Free_energy_Histogram_Q(Qf,nbins,beta):
+def Free_energy_Histogram_Q(Qf, nbins, beta):
 
     #Histogram calculation
-    hist,bins = np.histogram(Qf[::1],nbins,density=True)
+    hist, bins = np.histogram(Qf[::1], nbins, density=True)
 
     # Average of bins positions to plot
-    bins_center = (bins[:-1] + bins[1:])/2.0
+    bins_center = np.divide((bins[:-1] + bins[1:]), 2.0)
 
     # If you want to save the histogram file
     #np.savetxt(filename +  'hist.dat',np.c_[bins_center,hist])
 
     # Free Energy calculation
-    FQ = -np.log(hist)/beta
-    Free = np.c_[bins_center,FQ]
+    FQ = np.divide(-np.log(hist), beta)
+    Free = np.c_[bins_center, FQ]
     Free = excludeinvalid(Free)
 
     # Set minimum to zero + 1
-    F0 = np.min(Free[:,1])
-    Free[:,1] = Free[:,1] - F0 + 1
+    F0 = np.min(Free[:, 1])
+    Free[:, 1] = Free[:, 1] - F0 + 1
 
     #If do you prefer a method in which the last minima is always zero:
     #FG = savgol_filter(FQ, 5, 3, mode='nearest')
@@ -106,29 +107,40 @@ def Free_energy_Histogram_Q(Qf,nbins,beta):
 # Method to print Histogram of t stes to data file                             #
 #                                                                              #
 ################################################################################
-def Jump_Histogram(filename,Qf):
+def Jump_Histogram(filename, Qf):
 
     # Histogram calculation
-    hist,bins=np.histogram(Qf[::1],density=True)
+    hist, bins = np.histogram(Qf[::1], density=True)
 
     # Average of bins positions to plot
-    bins_center = (bins[:-1] + bins[1:])/2.0
+    bins_center = np.divide((bins[:-1] + bins[1:]), 2.0)
 
     # Write Histogram file
     #np.savetxt('/Users/ronaldo/Sites/mysite/outputs/' + filename + '_H.dat',np.c_[bins_center,hist])
 
-    return np.c_[bins_center,hist]
+    return np.c_[bins_center, hist]
 
 ################################################################################
 
 ################################################################################
-# Method to exclude invalid values                                             #
+# Method to exclude invalid values for N-dimensional arrays                    #
 ################################################################################
 
 def excludeinvalid(M):
-    M = M[~np.isnan(M).any(axis=-1)] #any(axis=1)
-    M = M[~np.isinf(M).any(axis=-1)]
-    M = M[~np.isneginf(M).any(axis=-1)]
+    M = M[~np.isnan(M).any(axis=1)] #any(axis=-1) was returning error to 1D vectors.
+    M = M[~np.isinf(M).any(axis=1)]
+    M = M[~np.isneginf(M).any(axis=1)]
+    return M
+################################################################################
+
+################################################################################
+# Method to exclude invalid values for 1-D arrays                              #
+################################################################################
+
+def excludeinvalid1D(M):
+    M = M[~np.isnan(M)]
+    M = M[~np.isinf(M)]
+    M = M[~np.isneginf(M)]
     return M
 ################################################################################
 
@@ -136,18 +148,18 @@ def excludeinvalid(M):
 # Method to calculate D(Q) and v(Q)                                            #
 #                                                                              #
 ################################################################################
-def CalculateD_V (Q, Qmin, Qmax, Qbins, nbins, tmin, tmax, CorrectionFactor):
+def CalculateD_V(Q, Qmin, Qmax, Qbins, nbins, tmin, tmax, CorrectionFactor):
 
     DQ = np.empty(shape=(0, 3))
     VQ = np.empty(shape=(0, 3))
 
     # Vector just to avoid the empty end of file
-    Add_end = np.linspace(Qmax,Qmax+Qbins,tmax+1)
+    Add_end = np.linspace(Qmax, Qmax+Qbins, tmax + 1)
 
-    Q = np.concatenate((Q,Add_end))
+    Q = np.concatenate((Q, Add_end))
 
-    bins        = np.linspace(Qmin,Qmax,nbins+1)
-    binscenter  = np.delete((bins[:-1] + bins[1:])/2.0,-1)
+    bins        = np.linspace(Qmin, Qmax, nbins + 1)
+    binscenter  = np.delete(np.divide((bins[:-1] + bins[1:]), 2.0), -1)
 
     # Calculate D and V coefficients as a function of Q
     for Qi in binscenter:
@@ -162,7 +174,7 @@ def CalculateD_V (Q, Qmin, Qmax, Qbins, nbins, tmin, tmax, CorrectionFactor):
         # Loop of times for linear regression
         for t in range(tmin, tmax):
 
-            y = Q[Q_index+t]
+            y = Q[Q_index + t]
 
             #  Write Histograms to filename with each t for each coordinate Qc
             # H = np.append(H, [[Jump_Histogram(str(Qi) + '_' + str(t),y)]], axis=0)
@@ -200,23 +212,23 @@ def CalculateD_V (Q, Qmin, Qmax, Qbins, nbins, tmin, tmax, CorrectionFactor):
 #   F_stochastic (Q) = G (Q)                                                   #
 ################################################################################
 def Free_energy_Stochastic_Q(DQ, VQ, beta):
-    Z = np.stack((DQ[:,0], np.divide(VQ[:,1], DQ[:,1]), np.sqrt(np.square(DQ[:,2])+np.square(VQ[:,2]))), axis=-1)
+    Z = np.stack((DQ[:, 0], np.divide(VQ[:, 1], DQ[:, 1]), np.sqrt(np.square(DQ[:, 2]) + np.square(VQ[:, 2]))), axis=-1)
     Z = excludeinvalid(Z)
-    W = np.stack((Z[:,0], integrate.cumtrapz(Z[:,1], Z[:,0], initial=Z[:,1][0]), Z[:,2]), axis=-1)
+    W = np.stack((Z[:, 0], integrate.cumtrapz(Z[:, 1], Z[:, 0], initial=Z[:, 1][0]), Z[:, 2]), axis=-1)
     W = excludeinvalid(W)
 
-    G = np.empty(shape=(0,3))
+    G = np.empty(shape=(0, 3))
 
-    for Qi in DQ[:,0]:
+    for Qi in DQ[:, 0]:
 
         irow, icol = np.where(np.equal(W, Qi))
         jrow, jcol = np.where(np.equal(DQ, Qi))
 
         if np.logical_and(np.not_equal(np.size(irow), 0), np.not_equal(np.size(jrow), 0)):
 
-            GQ = -(float(W[np.int(irow[0]),1]))+np.log(float(DQ[np.int(jrow[0]),1]))
+            GQ = -(float(W[np.int(irow[0]), 1])) + np.log(float(DQ[np.int(jrow[0]), 1]))
             GQ = np.divide(GQ, beta)
-            er = W[:,2][np.int(irow[0])]
+            er = W[:, 2][np.int(irow[0])]
 
         else:
 
@@ -228,8 +240,8 @@ def Free_energy_Stochastic_Q(DQ, VQ, beta):
     G = excludeinvalid(G)
 
     # Set minimum to zero
-    G0 = np.min(G[:,1])
-    G[:,1] = G[:,1] - G0
+    G0 = np.min(G[:, 1])
+    G[:, 1] = G[:, 1] - G0
 
     #If you want to assign zero for the last minimum
     #SG = savgol_filter(G[:,1], 7, 3, mode='nearest')
@@ -248,53 +260,53 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
     utau    = 0
     DQ      = np.asarray(DQ)
     G       = np.asarray(G)
-    G       = excludeinvalid(G)
     DQ      = excludeinvalid(DQ)
-    tau     = np.empty(shape=(0,3))
-    taul    = np.empty(shape=(0,3))
+    G       = excludeinvalid(G)
+    tau     = np.empty(shape=(0, 3))
+    taul    = np.empty(shape=(0, 3))
 
     # Get index of Q value close to Qzero
-    idxzero = (np.abs(G[:,0]-Qzero)).argmin()
+    idxzero = (np.abs(G[:, 0] - Qzero)).argmin()
 
     # Get index of Q value close to Qone
-    idxone  = (np.abs(G[:,0]-Qone)).argmin()
+    idxone  = (np.abs(G[:, 0] - Qone)).argmin()
 
     if Qzero < Qone: x = 1
     else: x = -1
 
     # Summing from Qzero to Qone
-    for Qj in G[:,0][idxzero:idxone+x:x]:
+    for Qj in G[:, 0][idxzero:idxone + x:x]:
 
         irow, icol   = np.where(DQ == Qj)
         jrow, jcol   = np.where(G == Qj)
-        tau          = np.empty(shape=(0,3))
-        idxinit      = (np.abs(G[:,0]-Qinit)).argmin()
-        idxj         = (np.abs(G[:,0]-Qj)).argmin()
+        tau          = np.empty(shape=(0, 3))
+        idxinit      = (np.abs(G[:, 0] - Qinit)).argmin()
+        idxj         = (np.abs(G[:, 0] - Qj)).argmin()
 
         if Qinit < Qj: y=1
         else: y=-1
 
         # Summing from Qinit to Qj
-        for Qk in G[:,0][idxinit:idxj+y:y]:
+        for Qk in G[:, 0][idxinit:idxj + y:y]:
 
             krow, kcol = np.where(G == Qk)
 
             if (np.not_equal(np.size(irow), 0) and np.not_equal(np.size(jrow), 0) and np.not_equal(np.size(krow), 0)):
-                if not ((abs(float(G[np.int(jrow[0]), 1])) >= (abs(np.nanmean(G, axis=0)[1])+abs(3*np.nanstd(G, axis=0)[1]))) or (abs(float(G[np.int(jrow[0]), 1])) <= (abs(np.nanmean(G, axis=0)[1])-abs(3*np.nanstd(G, axis=0)[1])))):
+                if not ((abs(float(G[np.int(jrow[0]), 1])) >= (abs(np.nanmean(G, axis=0)[1])+abs(3*np.nanstd(G, axis=0)[1]))) or (abs(float(G[np.int(jrow[0]), 1])) <= (abs(np.nanmean(G, axis=0)[1]) - abs(3*np.nanstd(G, axis=0)[1])))):
                     GQ1 = (float(G[np.int(jrow[0]), 1]))
                     err1 = (float(G[np.int(jrow[0]), 2]))
                 else:
                     GQ1 = np.nan
                     err1 = np.nan
-                if not ((abs(float(G[np.int(krow[0]), 1])) >= (abs(np.nanmean(G, axis=0)[1])+abs(3*np.nanstd(G, axis=0)[1]))) or (abs(float(G[np.int(krow[0]), 1])) <= (abs(np.nanmean(G, axis=0)[1])-abs(3*np.nanstd(G, axis=0)[1])))):
+                if not ((abs(float(G[np.int(krow[0]), 1])) >= (abs(np.nanmean(G, axis=0)[1]) + abs(3*np.nanstd(G, axis=0)[1]))) or (abs(float(G[np.int(krow[0]), 1])) <= (abs(np.nanmean(G, axis=0)[1]) - abs(3*np.nanstd(G, axis=0)[1])))):
                     GQ2 = (float(G[np.int(krow[0]), 1]))
                     err2 = (float(G[np.int(krow[0]), 2]))
                 else:
                     GQ2 = np.nan
                     err2 = np.nan
-                utau = ((np.exp(beta*(GQ1-GQ2)))/(float(DQ[np.int(irow[0]), 1]))) #calculating t_folding/unfolding
-                if float(DQ[np.int(irow[0]), 1]) !=0:
-                    uncerutau = np.absolute(utau)*np.sqrt(np.square(beta)*(np.square(err1)+np.square(err2))+np.square(float(DQ[np.int(irow[0]), 2])/float(DQ[np.int(irow[0]), 1])))
+                utau = np.divide((np.exp(np.multiply(beta, (GQ1 - GQ2)))), (float(DQ[np.int(irow[0]), 1]))) #calculating t_folding/unfolding
+                if float(DQ[np.int(irow[0]), 1]) != 0:
+                    uncerutau = np.multiply(np.absolute(utau), np.sqrt(np.multiply(np.square(beta), (np.square(err1) + np.square(err2))) + np.square(np.divide(float(DQ[np.int(irow[0]), 2]), float(DQ[np.int(irow[0]), 1])))))
                 else:
                     uncerutau = 0
             else:
@@ -305,14 +317,14 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
             tau = excludeinvalid(tau)
 
         #Inner integral
-        inttau = integrate.cumtrapz(tau[:,1], tau[:,0], axis=0, initial=tau[0,1])[-1] #inner integral
-        uncertau = inttau*np.sqrt(np.mean(np.square(excludeinvalid(tau[:,2]/tau[:,1])))) #estimating error in inner integral
+        inttau = integrate.cumtrapz(tau[:, 1], tau[:, 0], axis=0, initial=tau[0, 1])[-1] #inner integral
+        uncertau = np.multiply(inttau, np.sqrt(np.mean(np.square(excludeinvalid1D(np.divide(tau[:, 2], tau[:,1])))))) #estimating error in inner integral
         taul = np.append(taul, [[Qj, inttau, uncertau]], axis=0)
         taul = excludeinvalid(taul)
 
     #Outer integral
     inttaul = integrate.cumtrapz(taul[:,1], taul[:,0], axis=0, initial=taul[0,1])[-1] #outer integral
-    uncerttaul = inttaul*np.sqrt(np.amax(np.square(excludeinvalid(taul[:,2]/taul[:,1])))) #estimating error in inner integral
+    uncerttaul = np.multiply(inttaul, np.sqrt(np.amax(np.square(excludeinvalid1D(np.divide(taul[:,2], taul[:,1])))))) #estimating error in inner integral
     return inttaul, uncerttaul
 
 ################################################################################
@@ -322,28 +334,28 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
 # Method to calculate analytical mtpt                                          #
 #                                                                              #
 ################################################################################
-def calcmtpt(beta,Qzero,Qone,DQ,G):
+def calcmtpt(beta, Qzero, Qone, DQ, G):
 
     DQ = np.asarray(DQ)
     G = np.asarray(G)
 
     # Sampling left part of the integral
-    vlint        = simpleint(testcalc,lcoreint,beta,Qzero,Qone,G,DQ)
+    vlint        = simpleint(testcalc, lcoreint, beta, Qzero, Qone, G, DQ)
 
     # Left integral from Qunf to Qfold
-    intlintegral = integrate.cumtrapz(vlint[:,1], vlint[:,0], axis=0, initial=vlint[0,1])[-1]
+    intlintegral = integrate.cumtrapz(vlint[:, 1], vlint[:, 0], axis=0, initial=vlint[0, 1])[-1]
 
     # Sampling right part of integral
-    vrint        = simpleint(testcalc,rcoreint,beta,Qzero,Qone,G,DQ)
+    vrint        = simpleint(testcalc, rcoreint, beta, Qzero, Qone, G, DQ)
 
     # Right integral from Qunf to Qfold
-    intrintegral = integrate.cumtrapz(vrint[:,1], vrint[:,0], axis=0, initial=vrint[0,1])[-1]
+    intrintegral = integrate.cumtrapz(vrint[:, 1], vrint[:, 0], axis=0, initial = vrint[0, 1])[-1]
 
-    inttpt       = intlintegral*intrintegral
+    inttpt       = np.multiply(intlintegral, intrintegral)
 
     #Using max uncertainty evaluated in both integral combinations as the final uncertainty
     np.seterr(divide='ignore', invalid='ignore')
-    unmtpt = np.absolute(inttpt)*np.sqrt(np.mean(np.square(excludeinvalid(np.divide(vlint[:,2], vlint[:,1])))) + np.mean(np.square(excludeinvalid(np.divide(vrint[:,2], vrint[:,1])))))
+    unmtpt = np.multiply(np.absolute(inttpt), np.sqrt(np.mean(np.square(excludeinvalid1D(np.divide(vlint[:, 2], vlint[:, 1])))) + np.mean(np.square(excludeinvalid1D(np.divide(vrint[:, 2], vrint[:, 1]))))))
     return inttpt, unmtpt
 
 ################################################################################
@@ -358,7 +370,7 @@ def rcoreint(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
     val = np.divide((np.exp(beta*(GQ1))), (float(DQ[np.int(irow[0]), 1])))
     #Using max uncertainty evaluated in both integral combinations as the final uncertainty
     if np.not_equal(float(DQ[np.int(irow[0]), 1]), 0):
-        uncert = np.absolute(val)*(np.sqrt(np.square(beta)*np.square(unc)+np.square(np.divide(float(DQ[np.int(irow[0]), 2]), float(DQ[np.int(irow[0]), 1])))))
+        uncert = np.multiply(np.absolute(val), (np.sqrt(np.multiply(np.square(beta), np.square(unc)) + np.square(np.divide(float(DQ[np.int(irow[0]), 2]), float(DQ[np.int(irow[0]), 1]))))))
     else:
         uncert = 0
     return val, uncert
@@ -375,11 +387,11 @@ def lcoreint(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
     xphi, unphi = phi(beta, Qzero, Qone, DQ, G, Qx)
 
     # Calculate lintegral
-    val = (np.exp(-1*beta*(GQ1))*xphi*(1-xphi))
+    val = (np.multiply(np.exp(np.multiply(np.multiply(-1, beta), (GQ1))), np.multiply(xphi, (1-xphi))))
 
     #Using max uncertainty as the final
     if np.logical_and(np.not_equal(GQ1, 0), np.not_equal(xphi, 0)):
-        uncert = np.absolute(val)*beta*np.absolute((-1*beta*(GQ1))*xphi*(1-xphi))*(np.sqrt(np.square(np.divide(unc, GQ1))+np.square(np.divide(unphi, xphi))))
+        uncert = np.multiply(np.multiply(np.multiply(np.absolute(val), beta), np.absolute(np.multiply(np.multiply(np.multiply(np.multiply(-1, beta), (GQ1)), xphi), (1-xphi)))), (np.sqrt(np.square(np.divide(unc, GQ1))+np.square(np.divide(unphi, xphi)))))
     else:
         uncert = 0
     return val, uncert
@@ -391,22 +403,22 @@ def lcoreint(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
 # Method to \phi(x)                                                            #
 #                                                                              #
 ################################################################################
-def phi(beta,Qzero,Qone,DQ,G,qx):
+def phi(beta, Qzero, Qone, DQ, G, qx):
 
     DQ          = np.asarray(DQ)
     G           = np.asarray(G)
-    vlowphi     = simpleint(testcalc,equationphi,beta,Qzero,Qone,G,DQ)
+    vlowphi     = simpleint(testcalc, equationphi, beta, Qzero, Qone, G, DQ)
 
     # Denominator integral from Qzero to Qone
-    intlowphi   = integrate.cumtrapz(vlowphi[:,1], vlowphi[:,0], axis=0, initial=vlowphi[0,1])[-1]
+    intlowphi   = integrate.cumtrapz(vlowphi[:, 1], vlowphi[:, 0], axis=0, initial=vlowphi[0, 1])[-1]
     vupphi      = simpleint(testcalc, equationphi, beta, Qzero, qx, G, DQ)
 
     # Numerator integral from Qzero to Q
-    intupphi    = integrate.cumtrapz(vupphi[:,1], vupphi[:,0], axis=0, initial=vupphi[0,1])[-1]
+    intupphi    = integrate.cumtrapz(vupphi[:, 1], vupphi[:, 0], axis=0, initial=vupphi[0, 1])[-1]
 
     phix        = np.divide(intupphi, intlowphi)
     #Using max uncertainty evaluated in both integral combinations as the final uncertainty
-    uncphi = np.absolute(phix)*np.sqrt(np.mean(np.square(excludeinvalid(np.divide(vupphi[:,2], vupphi[:,1])))) + np.mean(np.square(excludeinvalid(np.divide(vlowphi[:,2], vlowphi[:,1])))))
+    uncphi = np.multiply(np.absolute(phix), np.sqrt(np.mean(np.square(excludeinvalid1D(np.divide(vupphi[:, 2], vupphi[:, 1])))) + np.mean(np.square(excludeinvalid1D(np.divide(vlowphi[:, 2], vlowphi[:, 1]))))))
 
     return phix, uncphi
 
@@ -417,28 +429,28 @@ def phi(beta,Qzero,Qone,DQ,G,qx):
 # Method to evaluate values to a simple integral                               #
 #                                                                              #
 ################################################################################
-def simpleint(calctest,funcion,beta,Qzero,Qone,G,DQ):
+def simpleint(calctest, funcion, beta, Qzero, Qone, G, DQ):
 
     G = excludeinvalid(G)
     DQ = excludeinvalid(DQ)
 
     # Initializing two column numpy array
-    sampledvalues = np.empty(shape=(0,3))
+    sampledvalues = np.empty(shape=(0, 3))
 
     # Get index of Q value close to Qzero
-    idxzero = (np.abs(G[:,0]-Qzero)).argmin()
+    idxzero = (np.abs(G[:, 0] - Qzero)).argmin()
 
     # Get index of Q value close to Qone
-    idxone  = (np.abs(G[:,0]-Qone)).argmin()
+    idxone  = (np.abs(G[:, 0] - Qone)).argmin()
 
     if Qzero < Qone: x=1
     else: x=-1
 
     # Summing from Qzero to Qone
-    for Qx in G[:,0][idxzero:idxone+x:x]:
+    for Qx in G[:, 0][idxzero:idxone + x:x]:
 
-        irow,icol = np.where(DQ == Qx)
-        jrow,jcol = np.where(G == Qx)
+        irow, icol = np.where(DQ == Qx)
+        jrow, jcol = np.where(G == Qx)
         value, uncertainty = calctest(funcion, irow, jrow, G, DQ, beta, Qx, Qzero, Qone)
         sampledvalues = np.append(sampledvalues, [[Qx, value, uncertainty]], axis=0)
 
@@ -457,9 +469,9 @@ def simpleint(calctest,funcion,beta,Qzero,Qone,G,DQ):
 def equationphi(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
 
     # Calculating phi core
-    val = np.divide((np.exp(beta*(GQ1))), (float(DQ[np.int(irow[0]), 1])))
+    val = np.divide((np.exp(np.multiply(beta, (GQ1)))), (float(DQ[np.int(irow[0]), 1])))
     if float(DQ[np.int(irow[0]), 1]) != 0:
-        uncert = np.absolute(val)*(np.sqrt(np.square(beta)*np.square(unc)+np.square(np.divide(float(DQ[np.int(irow[0]), 2]),float(DQ[np.int(irow[0]), 1])))))
+        uncert = np.multiply(np.absolute(val), (np.sqrt(np.multiply(np.square(beta), np.square(unc)) + np.square(np.divide(float(DQ[np.int(irow[0]), 2]),float(DQ[np.int(irow[0]), 1]))))))
     else:
         uncert = 0
     return val, uncert
@@ -494,14 +506,14 @@ def testcalc(eq, irow, jrow, G, DQ, beta, Qx, Qzero, Qone):
 # Method to calculate mfpt, mtpt and number of transitions from trajectory     #
 #                                                                              #
 ################################################################################
-def calcttrajectory(Qzero,Qone,Qtr):
+def calcttrajectory(Qzero, Qone, Qtr):
 
     tAB = tBA = tTP = nAB = nBA = t0  = t1 = t2 = 0
 
-    resultsAB  = np.empty(shape=[0,4])
-    resultsBA  = np.empty(shape=[0,4])
-    resultsTP0 = np.empty(shape=[0,4])
-    resultsTP2 = np.empty(shape=[0,4])
+    resultsAB  = np.empty(shape=(0, 4))
+    resultsBA  = np.empty(shape=(0, 4))
+    resultsTP0 = np.empty(shape=(0, 4))
+    resultsTP2 = np.empty(shape=(0, 4))
 
     # Defines initial state. A is s==0
     if Qtr[0] <= Qzero: s = 0
@@ -517,7 +529,7 @@ def calcttrajectory(Qzero,Qone,Qtr):
         if s == 0:
 
             # identify last time when Q is lower than Q0
-            if Qtr[i] <= Qzero: t1 = i+1
+            if Qtr[i] <= Qzero: t1 = i + 1
 
             # identify when Q is greater than Q1
             if Qtr[i] >= Qone:
@@ -528,14 +540,14 @@ def calcttrajectory(Qzero,Qone,Qtr):
                 s   = 2
 
                 #add results in a row
-                resultsAB  = np.append(resultsAB,  [[nAB,t0,t1,(t2-t0)]], axis=0)
-                resultsTP0 = np.append(resultsTP0, [[nAB,t1,t2,(t2-t1)]], axis=0)
+                resultsAB  = np.append(resultsAB,  [[nAB, t0, t1, (t2-t0)]], axis=0)
+                resultsTP0 = np.append(resultsTP0, [[nAB, t1, t2, (t2-t1)]], axis=0)
                 t0 = t2
                 t1 = t2
 
         elif s == 2:
             # identify last time when Q is greater than Q1
-            if Qtr[i] >= Qone: t1 = i+1
+            if Qtr[i] >= Qone: t1 = i + 1
 
             # identify when Q is lower than Q0
             if Qtr[i] <= Qzero:
@@ -544,29 +556,29 @@ def calcttrajectory(Qzero,Qone,Qtr):
                 # count a transition
                 nBA = nBA +1
                 s = 0
-                resultsBA = np.append(resultsBA, [[nBA,t0,t1,(t2-t0)]], axis=0)
-                resultsTP2 = np.append(resultsTP2, [[nBA,t1,t2,(t2-t1)]], axis=0)
+                resultsBA = np.append(resultsBA, [[nBA, t0, t1, (t2-t0)]], axis=0)
+                resultsTP2 = np.append(resultsTP2, [[nBA, t1, t2, (t2-t1)]], axis=0)
                 t0 = t2
                 t1 = t2
         elif s == 1:
-            if Qtr[i+1] <= Qzero: s = 0
-            elif Qtr[i+1] >= Qone: s = 2
+            if Qtr[i + 1] <= Qzero: s = 0
+            elif Qtr[i + 1] >= Qone: s = 2
 
-    tAB      = (np.sum(resultsAB, axis=0)[3])/nAB
+    tAB      = np.divide((np.sum(resultsAB, axis=0)[3]), nAB)
     stdtAB   = np.nanstd(resultsAB, axis=0)[3]
-    tBA      = (np.sum(resultsBA, axis=0)[3])/nBA
+    tBA      = np.divide((np.sum(resultsBA, axis=0)[3]), nBA)
     stdtBA   = np.nanstd(resultsBA, axis=0)[3]
-    nTPAB    = (resultsTP0[(np.size(resultsTP0, axis=0)-1)][0])
-    tTPAB    = (np.sum(resultsTP0, axis=0)[3])/nTPAB
+    nTPAB    = (resultsTP0[(np.size(resultsTP0, axis=0) - 1)][0])
+    tTPAB    = np.divide((np.sum(resultsTP0, axis=0)[3]), nTPAB)
     stdtTPAB = np.nanstd(resultsTP0, axis=0)[3]
-    nTPBA    = (resultsTP2[(np.size(resultsTP2, axis=0)-1)][0])
-    tTPBA    = (np.sum(resultsTP2, axis=0)[3])/nTPBA
+    nTPBA    = (resultsTP2[(np.size(resultsTP2, axis=0) - 1)][0])
+    tTPBA    = np.divide((np.sum(resultsTP2, axis=0)[3]), nTPBA)
     stdtTPBA = np.nanstd(resultsTP2, axis=0)[3]
-    nTP      = (resultsTP0[(np.size(resultsTP0, axis=0)-1)][0])+(resultsTP2[(np.size(resultsTP2, axis=0)-1)][0])
-    tTP      = ((np.sum(resultsTP0, axis=0)[3])+(np.sum(resultsTP2, axis=0)[3]))/(nTP)
+    nTP      = (resultsTP0[(np.size(resultsTP0, axis=0) - 1)][0]) + (resultsTP2[(np.size(resultsTP2, axis=0) - 1)][0])
+    tTP      = np.divide(((np.sum(resultsTP0, axis=0)[3]) + (np.sum(resultsTP2, axis=0)[3])), (nTP))
 
     #np.savetxt('Results.dat',resultsAB) #to print results matrix in a file
-    return tAB,tBA,nTPAB,tTPAB,nTPBA,tTPBA,nAB,nBA,nTP,tTP,stdtAB,stdtBA,stdtTPAB,stdtTPBA
+    return tAB, tBA, nTPAB, tTPAB, nTPBA, tTPBA, nAB, nBA, nTP, tTP, stdtAB, stdtBA, stdtTPAB, stdtTPBA
 
 ################################################################################
 
@@ -691,9 +703,7 @@ def plotly_Q(Q, output_file_Q,  Q_zero, Q_one):
 # this definition is for the form from the main.py website framework           #
 #                                                                              #
 ################################################################################
-def do_calculation(runId, path,
-    filename, OUTPUT_FOLDER,
-    beta,Eq,Q_zero,Q_one,Qbins,time_step,Snapshot,tmin,tmax):
+def do_calculation(runId, path, filename, OUTPUT_FOLDER, beta, Eq, Q_zero, Q_one, Qbins, time_step, Snapshot, tmin, tmax):
 
     ## Global variables declaration
     # NOW SHOULD BE IN THE DO_CALCULATION DEFINITION
@@ -827,9 +837,9 @@ def do_calculation(runId, path,
     f_dict.close()
 
     # write parameters input to a log file
-    X=[beta,Eq,Q_zero,Q_one,Qbins,time_step,Snapshot,tmin,tmax]
-    np.savetxt(out_folder + 'input_parameters.log', X, delimiter=',',
-        header="[beta,EquilibrationSteps,Q_zero,Q_one,Qbins,time_step,Snapshot,tmin,tmax]")
+    X = [beta,Eq,Q_zero,Q_one,Qbins,time_step,Snapshot,tmin,tmax]
+    np.savetxt(out_folder + 'input_parameters.log', X, delimiter = ',',
+        header = "[beta,EquilibrationSteps,Q_zero,Q_one,Qbins,time_step,Snapshot,tmin,tmax]")
 
 
     return (dict_times, out_file_Q, error)
