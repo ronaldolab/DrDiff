@@ -63,7 +63,7 @@ import matplotlib.pyplot as plt
 #                                                                              #
 ################################################################################
 def extract_trajectory(file, Eq):
-    return np.asarray([float(line.rstrip()) for line in islice(f, Eq, None)])
+    return np.genfromtxt(file, skip_header=Eq, comments=['#', '@', ';'])
 
 ################################################################################
 
@@ -212,11 +212,11 @@ def CalculateD_V(Q, Qmin, Qmax, Qbins, nbins, tmin, tmax, CorrectionFactor):
 #   F_stochastic (Q) = G (Q)                                                   #
 ################################################################################
 def Free_energy_Stochastic_Q(DQ, VQ, beta):
-    Z = np.stack((DQ[:, 0], np.divide(VQ[:, 1], DQ[:, 1]), np.sqrt(np.square(DQ[:, 2]) + np.square(VQ[:, 2]))), axis=-1)
+    Z = np.stack((DQ[:, 0], np.divide(VQ[:, 1], DQ[:, 1]), np.multiply(np.abs(np.divide(VQ[:, 1], DQ[:, 1])), np.sqrt(np.square(np.divide(DQ[:, 2], DQ[:, 1])) + np.square(np.divide(VQ[:, 2], VQ[:, 1]))))), axis=-1)
     Z = excludeinvalid(Z)
     W = np.stack((Z[:, 0], integrate.cumtrapz(Z[:, 1], Z[:, 0], initial=Z[:, 1][0]), Z[:, 2]), axis=-1)
     W = excludeinvalid(W)
-
+    
     G = np.empty(shape=(0, 3))
 
     for Qi in DQ[:, 0]:
@@ -228,7 +228,7 @@ def Free_energy_Stochastic_Q(DQ, VQ, beta):
 
             GQ = -(float(W[np.int(irow[0]), 1])) + np.log(float(DQ[np.int(jrow[0]), 1]))
             GQ = np.divide(GQ, beta)
-            er = W[:, 2][np.int(irow[0])]
+            er = np.multiply(np.abs(GQ), np.sqrt(np.square(np.divide(Z[:, 2][np.int(irow[0])], Z[:, 1][np.int(irow[0])])) + np.square(np.divide(DQ[:, 2][np.int(jrow[0])], DQ[:, 1][np.int(jrow[0])]))))
 
         else:
 
@@ -271,7 +271,7 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
     # Get index of Q value close to Qone
     idxone  = (np.abs(G[:, 0] - Qone)).argmin()
 
-    if Qzero < Qone: x = 1
+    if np.less(Qzero, Qone): x = 1
     else: x = -1
 
     # Summing from Qzero to Qone
@@ -283,7 +283,7 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
         idxinit      = (np.abs(G[:, 0] - Qinit)).argmin()
         idxj         = (np.abs(G[:, 0] - Qj)).argmin()
 
-        if Qinit < Qj: y=1
+        if np.less(Qinit, Qj): y=1
         else: y=-1
 
         # Summing from Qinit to Qj
@@ -292,7 +292,7 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
             krow, kcol = np.where(G == Qk)
 
             if np.not_equal(np.size(irow), 0) and np.not_equal(np.size(jrow), 0) and np.not_equal(np.size(krow), 0):
-                if not ((abs(float(G[np.int(jrow[0]), 1])) >= (abs(np.nanmean(G, axis=0)[1])+abs(3*np.nanstd(G, axis=0)[1]))) or (abs(float(G[np.int(jrow[0]), 1])) <= (abs(np.nanmean(G, axis=0)[1]) - abs(3*np.nanstd(G, axis=0)[1])))):
+                if not ((abs(float(G[np.int(jrow[0]), 1])) >= (abs(np.nanmean(G, axis=0)[1]) + abs(3*np.nanstd(G, axis=0)[1]))) or (abs(float(G[np.int(jrow[0]), 1])) <= (abs(np.nanmean(G, axis=0)[1]) - abs(3*np.nanstd(G, axis=0)[1])))):
                     GQ1 = (float(G[np.int(jrow[0]), 1]))
                     err1 = (float(G[np.int(jrow[0]), 2]))
                 else:
@@ -324,7 +324,8 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
 
     #Outer integral
     inttaul = integrate.cumtrapz(taul[:,1], taul[:,0], axis=0, initial=taul[0,1])[-1] #outer integral
-    uncerttaul = np.multiply(inttaul, np.sqrt(np.amax(np.square(excludeinvalid1D(np.divide(taul[:,2], taul[:,1])))))) #estimating error in inner integral
+    uncerttaul = inttaul*np.sqrt(np.amax(np.square(excludeinvalid1D(taul[:,2]/taul[:,1])))) #estimating error in inner integral
+    #uncerttaul = np.multiply(inttaul, np.sqrt(np.amax(np.square(excludeinvalid1D(np.divide(taul[:,2], taul[:,1])))))) #estimating error in inner integral
     return inttaul, uncerttaul
 
 ################################################################################
@@ -724,7 +725,8 @@ def do_calculation(runId, path, filename, OUTPUT_FOLDER, beta, Eq, Q_zero, Q_one
         error += 'I/O error. %s' % errno
         return (errno, error)
 
-    Q = extract_trajectory(f, Eq)
+    #Using numpy.genfromtxt, it is unnecessary open the trajectory file. We just kept this part to check if there is some errors on it.
+    Q = extract_trajectory(filename, Eq)
 
     # Save a figure in svg for the website
     #out_file_Q = path + '/static/trajectories/' + str(runId) + '_traj.svg'
