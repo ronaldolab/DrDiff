@@ -63,7 +63,7 @@ import matplotlib.pyplot as plt
 #                                                                              #
 ################################################################################
 def extract_trajectory(file, Eq):
-    return np.genfromtxt(file, skip_header=Eq, comments=['#', '@', ';'])
+    return np.genfromtxt(file, skip_header=Eq)#, comments=['#', '@', ';'])
 
 ################################################################################
 
@@ -212,11 +212,12 @@ def CalculateD_V(Q, Qmin, Qmax, Qbins, nbins, tmin, tmax, CorrectionFactor):
 #   F_stochastic (Q) = G (Q)                                                   #
 ################################################################################
 def Free_energy_Stochastic_Q(DQ, VQ, beta):
-    Z = np.stack((DQ[:, 0], np.divide(VQ[:, 1], DQ[:, 1]), np.multiply(np.abs(np.divide(VQ[:, 1], DQ[:, 1])), np.sqrt(np.square(np.divide(DQ[:, 2], DQ[:, 1])) + np.square(np.divide(VQ[:, 2], VQ[:, 1]))))), axis=-1)
+    #Z = np.stack((DQ[:, 0], np.divide(VQ[:, 1], DQ[:, 1]), np.multiply(np.abs(np.divide(VQ[:, 1], DQ[:, 1])), np.sqrt(np.square(np.divide(DQ[:, 2], DQ[:, 1])) + np.square(np.divide(VQ[:, 2], VQ[:, 1]))))), axis=-1)
+    Z = np.stack((DQ[:, 0], np.divide(VQ[:, 1], DQ[:, 1]), np.multiply(np.abs(np.divide(VQ[:, 1], DQ[:, 1])), np.sqrt(np.square(np.divide(np.diff(DQ[:, 2]), np.diff(DQ[:, 1]))) + np.square(np.divide(np.diff(VQ[:, 2]), np.diff(VQ[:, 1])))))), axis=-1)
     Z = excludeinvalid(Z)
     W = np.stack((Z[:, 0], integrate.cumtrapz(Z[:, 1], Z[:, 0], initial=Z[:, 1][0]), Z[:, 2]), axis=-1)
     W = excludeinvalid(W)
-    
+
     G = np.empty(shape=(0, 3))
 
     for Qi in DQ[:, 0]:
