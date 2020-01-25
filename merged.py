@@ -62,39 +62,59 @@ import matplotlib.pyplot as plt
 import os
 import csv
 
+##################################################################################################
+# Method to print Free Energy and the Histogram to data file
+#   F(Q) = - np.log [number-of-states(Q)]
+##################################################################################################
+def Free_energy_Histogram_Q(Qf,nbins,beta):
 
-################################################################################
-# Function to print Free Energy and the Histogram to data file                 #
-#   F(Q) = - np.log [number-of-states(Q)]                                      #
-################################################################################
-def Free_energy_Histogram_Q(filename, Qf, nbins):
     #Histogram calculation
-    #hist, bins=np.histogram(Qf[::1], int(np.ceil(np.max(Qf)/Qbins)), density=True) ##
-    hist,bins = np.histogram(Qf[::1], nbins, density=True) ##
-    #hist, bins=np.histogram(Qf[::1], 28, density=True)
-    bins_center = (bins[:-1] + bins[1:])/2.0 ## Average of bins positions to plot
-    #np.savetxt('hist_' + filename + '.dat', np.c_[bins_center, hist]) ## Write Histogram file
-    FQ = -1*np.log(hist) ## Free Energy calculation
-    FG = savgol_filter(FQ, 5, 3, mode='nearest')
-    Free = np.c_[bins_center, FQ]
-    id = argrelmin(FG)[-1][-1]
-    Free[:,1] = Free[:,1]-Free[:,1][id]
-    np.savetxt('Free_energy_' + filename + '.dat', Free) ## Write Free Energy file
-    #print('Coordinate Histogram and Free Energy calculated')
-    #print('################################################')
-    return
-################################################################################
+    hist,bins = np.histogram(Qf[::1],nbins,density=True)
 
-################################################################################
-# Function to print Histogram of t stes to data file                           #
-#                                                                              #
-################################################################################
-def Jump_Histogram(filename, Qf):
-    hist, bins = np.histogram(Qf[::1], density=True) ## Histogram calculation
-    bins_center = (bins[:-1] + bins[1:])/2.0 ## Average of bins positions to plot
-    #np.savetxt('H_' + filename + '.dat', np.c_[bins_center, hist]) ## Write Histogram file
-    return
-################################################################################
+    # Average of bins positions to plot
+    bins_center = (bins[:-1] + bins[1:])/2.0
+
+    # If you want to save the histogram file
+    #np.savetxt(filename +  'hist.dat',np.c_[bins_center,hist])
+
+    # Free Energy calculation
+    FQ = -np.log(hist)/beta
+    Free = np.c_[bins_center,FQ]
+    Free = excludeinvalid(Free)
+
+    # Set minimum to zero + 1
+    F0 = np.min(Free[:,1])
+    Free[:,1] = Free[:,1] - F0 + 1
+
+    #If do you prefer a method in which the last minima is always zero:
+    #FG = savgol_filter(FQ, 5, 3, mode='nearest')
+    #Free = np.c_[bins_center, FQ]
+    #id = argrelmin(FG)[-1][-1]
+    #Free[:,1] = Free[:,1]-Free[:,1][id]
+
+    return Free
+
+##################################################################################################
+
+
+##################################################################################################
+# Method to print Histogram of t stes to data file
+#
+##################################################################################################
+def Jump_Histogram(filename,Qf):
+
+    # Histogram calculation
+    hist,bins=np.histogram(Qf[::1],density=True)
+
+    # Average of bins positions to plot
+    bins_center = (bins[:-1] + bins[1:])/2.0
+
+    # Write Histogram file
+    #np.savetxt('/Users/ronaldo/Sites/mysite/outputs/' + filename + '_H.dat',np.c_[bins_center,hist])
+
+    return np.c_[bins_center,hist]
+
+##################################################################################################
 
 
 ################################################################################
@@ -121,7 +141,6 @@ def CheckFiles(q):
 
 ################################################################################
 # Function to exclude invalid values for n-dimensional matrix                  #
-#                                                                              #
 ################################################################################
 
 def excludeinvalid(M):
@@ -238,7 +257,7 @@ def calcmtpt(beta, Qzero, Qone, DQ, G):
     intrintegral = integrate.cumtrapz(vrint[:,1], vrint[:,0], axis=0, initial=vrint[0,1])[-1] #right integral from Qunf to Qfold
     inttpt = intlintegral*intrintegral
     np.seterr(divide='ignore', invalid='ignore')
-    unmtpt = np.absolute(inttpt)*np.sqrt(np.mean(np.square(excludeinvalid1D(vlint[:,2]/vlint[:,1]))) + np.mean(np.square(excludeinvalid1D(vrint[:,2]/vrint[:,1])))) #use max uncertainty evaluated in both integral combinations
+    unmtpt = np.absolute(inttpt)*np.sqrt(np.mean(np.square(excludeinvalid(np.divide(vlint[:,2], vlint[:,1])))) + np.mean(np.square(excludeinvalid(np.divide(vrint[:,2], vrint[:,1]))))) #use max uncertainty evaluated in both integral combinations
     return inttpt, unmtpt
 ################################################################################
 
@@ -453,6 +472,8 @@ def main():
     #print('################################################')
     nbins = np.int(np.ceil((Qmax-Qmin)/Qbins))
     Free_energy_Histogram_Q(arg, Q, nbins) ## Call function to Free Energy and Histogram
+
+
     DQ=[]
     VQ=[]
 

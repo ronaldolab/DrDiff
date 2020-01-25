@@ -212,14 +212,18 @@ def CalculateD_V(Q, Qmin, Qmax, Qbins, nbins, tmin, tmax, CorrectionFactor):
 #   F_stochastic (Q) = G (Q)                                                   #
 ################################################################################
 def Free_energy_Stochastic_Q(DQ, VQ, beta):
+    #Old way to evaluate uncertainty
     #Z = np.stack((DQ[:, 0], np.divide(VQ[:, 1], DQ[:, 1]), np.multiply(np.abs(np.divide(VQ[:, 1], DQ[:, 1])), np.sqrt(np.square(np.divide(DQ[:, 2], DQ[:, 1])) + np.square(np.divide(VQ[:, 2], VQ[:, 1]))))), axis=-1)
-    Z = np.stack((DQ[:, 0], np.divide(VQ[:, 1], DQ[:, 1]), np.multiply(np.abs(np.divide(VQ[:, 1], DQ[:, 1])), np.sqrt(np.square(np.divide(np.diff(DQ[:, 2]), np.diff(DQ[:, 1]))) + np.square(np.divide(np.diff(VQ[:, 2]), np.diff(VQ[:, 1])))))), axis=-1)
+    #Improved considering the simplest way.
+    #Z = np.stack((DQ[:, 0], np.divide(VQ[:, 1], DQ[:, 1]), np.multiply(np.abs(np.divide(VQ[:, 1], DQ[:, 1])), np.sqrt(np.square(np.append(np.divide(np.diff(DQ[:, 2]), np.diff(DQ[:, 1])), np.divide(np.diff(DQ[:, 2]), np.diff(DQ[:, 1]))[-1])) + np.square(np.append(np.divide(np.diff(VQ[:, 2]), np.diff(VQ[:, 1])), np.divide(np.diff(VQ[:, 2]), np.diff(VQ[:, 1]))[-1]))))), axis=-1)
+    #Trying to implement the derivative to more accuracy.
+    Z = np.stack((DQ[:, 0], np.divide(VQ[:, 1], DQ[:, 1]), np.multiply(1, np.sqrt(np.square(np.multiply(DQ[:, 2], np.append(np.divide(np.diff(DQ[:, 1]), np.diff(DQ[:, 0])), np.divide(np.diff(DQ[:, 1]), np.diff(DQ[:, 0]))[-1]))) + np.square(np.multiply(VQ[:, 2], np.append(np.divide(np.diff(VQ[:, 1]), np.diff(VQ[:, 0])), np.divide(np.diff(VQ[:, 1]), np.diff(VQ[:, 0]))[-1])))))), axis=-1)
     Z = excludeinvalid(Z)
     W = np.stack((Z[:, 0], integrate.cumtrapz(Z[:, 1], Z[:, 0], initial=Z[:, 1][0]), Z[:, 2]), axis=-1)
     W = excludeinvalid(W)
-
+    #print(np.shape(np.abs(np.divide(VQ[:, 1], DQ[:, 1]))), np.shape(np.concatenate((np.diff(DQ[:, 2]), np.diff(DQ[:, 2])[-1]), axis=0)), np.shape(np.diff(DQ[:, 1])), np.shape(np.diff(VQ[:, 2])), np.shape(np.diff(VQ[:, 1])))
     G = np.empty(shape=(0, 3))
-
+    print(np.divide(np.diff(VQ[:, 1]), np.diff(VQ[:, 0])))
     for Qi in DQ[:, 0]:
 
         irow, icol = np.where(np.equal(W, Qi))
