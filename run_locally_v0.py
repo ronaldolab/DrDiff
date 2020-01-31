@@ -28,10 +28,10 @@
 #                                                                              #
 # Output files:                                                                #
 #                                                                              #
-# Outputs will be in the output dir with files userid_*                        #
+# Outputs will be in the same dir starting with out-*                          #
 #                                                                              #
 # Python3 libraries are required:                                              #
-# numpy, scipy and itertools                                                   #
+# see file requirements_run_locally.txt                                        #
 #                                                                              #
 #                                                                              #
 # Connect with us by email: drdiff.info@gmail.com                              #
