@@ -67,7 +67,7 @@ def clean_file(file):
         data = f.read()
     with open("temporary", "w") as temp:
         temp.write(data)
-    for pattern in ["^@.*", "^#.*", "^;.*", "^!.*", "^[A-z].*"]:
+    for pattern in ["^@.*|^%.*|^#.*|^;.*|^!.*|^[A-z].*|^$.*"]:
         matched = re.compile(pattern).search
         with open("temporary", "r") as temp:
             with open("temporary2", "w") as outfile:
