@@ -45,7 +45,8 @@
 #                                                                              #
 ################################################################################
 
-#import os
+import re
+import os
 import csv
 #from itertools import islice
 import numpy as np
@@ -57,14 +58,68 @@ import matplotlib.pyplot as plt
 #import plotly.graph_objs as go  # remove this and add matplotlib
 #import plotly.io as pio         # remove this
 
+################################################################################
+# Method to clean the commentary lines from  the trajectory file               #
+#                                                                              #
+################################################################################
+def clean_file(file):
+    with open(file, "r") as f:
+        data = f.read()
+    with open("temporary", "w") as temp:
+        temp.write(data)
+    for pattern in ["^@.*", "^#.*", "^;.*", "^!.*", "^[A-z].*"]:
+        matched = re.compile(pattern).search
+        with open("temporary", "r") as temp:
+            with open("temporary2", "w") as outfile:
+                for line in temp:
+                    if not matched(line):
+                        outfile.write(line)
+        os.replace(outfile.name, temp.name)
+    return "temporary"
+
+################################################################################
+
+################################################################################
+# Method to load a huge numpy matrix fastest than genfromtxt                   #
+#                                                                              #
+################################################################################
+#A fastest way to read huge clean files
+def read_large_txt(file, eq_steps=0, delimiter=None, dtype=None):
+    with open(file, "r+") as FileObj:
+        nrows = sum(1 for line in FileObj)
+        FileObj.seek(0)
+        ncols = len(next(FileObj).split(delimiter))
+        out = np.empty((nrows, ncols), dtype=dtype)
+        FileObj.seek(0)
+        for i, line in enumerate(FileObj):
+            out[i] = line.split(delimiter)
+    return out[np.int(eq_steps):]
+
+################################################################################
 
 ################################################################################
 # Method to load the trajectory skipping the first Eq values                   #
 #                                                                              #
 ################################################################################
 def extract_trajectory(file, Eq):
-    return np.genfromtxt(file, skip_header=Eq)#, comments=['#', '@', ';'])
+    tempfile = clean_file(file)
+    trajectory = read_large_txt(tempfile, Eq)
+    try:
+        os.remove(tempfile)
+    except OSError:
+        print("Error while deleting temporary file.")
+    return trajectory.reshape(-1)
 
+################################################################################
+
+
+################################################################################
+# Method to compare and return first array lines with same Q betwen both       #
+#   F(Q) = - np.log [number-of-states(Q)]                                      #
+################################################################################
+def comparison_Q(first_array, second_array):
+    compared = first_array[np.isin(first_array[:, 0], second_array[:, 0])]
+    return compared
 ################################################################################
 
 
@@ -192,10 +247,10 @@ def CalculateD_V(Q, Qmin, Qmax, Qbins, nbins, tmin, tmax, CorrectionFactor):
         slopev, interceptv, r_valuev, p_valuev, std_errv = stats.linregress(V)
 
         # Save Diffusion for each coordinate value
-        DQ = np.append(DQ, [[Qi, np.divide(sloped, CorrectionFactor), np.divide(std_errd, CorrectionFactor)]], axis=0)
+        DQ = np.append(DQ, [[Qi, np.divide(sloped, CorrectionFactor), np.nan_to_num(np.divide(std_errd, sloped))]], axis=0)
 
         # Save Drift for each coordinate value
-        VQ = np.append(VQ, [[Qi, np.divide(slopev, CorrectionFactor), np.divide(std_errv, CorrectionFactor)]], axis=0)
+        VQ = np.append(VQ, [[Qi, np.divide(slopev, CorrectionFactor), np.nan_to_num(np.divide(std_errv, slopev))]], axis=0)
 
 
     DQ = np.asarray(DQ)
@@ -212,13 +267,10 @@ def CalculateD_V(Q, Qmin, Qmax, Qbins, nbins, tmin, tmax, CorrectionFactor):
 #   F_stochastic (Q) = G (Q)                                                   #
 ################################################################################
 def Free_energy_Stochastic_Q(DQ, VQ, beta):
+    DQ = comparison_Q(DQ, VQ)
+    VQ = comparison_Q(VQ, DQ)
     #Old way to evaluate uncertainty
-    #Z = np.stack((DQ[:, 0], np.divide(VQ[:, 1], DQ[:, 1]), np.multiply(np.abs(np.divide(VQ[:, 1], DQ[:, 1])), np.sqrt(np.square(np.divide(DQ[:, 2], DQ[:, 1])) + np.square(np.divide(VQ[:, 2], VQ[:, 1]))))), axis=-1)
-    #Improved considering the simplest way.
-    #Z = np.stack((DQ[:, 0], np.divide(VQ[:, 1], DQ[:, 1]), np.multiply(np.abs(np.divide(VQ[:, 1], DQ[:, 1])), np.sqrt(np.square(np.append(np.divide(np.diff(DQ[:, 2]), np.diff(DQ[:, 1])), np.divide(np.diff(DQ[:, 2]), np.diff(DQ[:, 1]))[-1])) + np.square(np.append(np.divide(np.diff(VQ[:, 2]), np.diff(VQ[:, 1])), np.divide(np.diff(VQ[:, 2]), np.diff(VQ[:, 1]))[-1]))))), axis=-1)
-    #Trying to implement the derivative to more accuracy.
-    #Z = np.stack((DQ[:, 0], np.divide(VQ[:, 1], DQ[:, 1]), np.multiply(1, np.sqrt(np.square(np.multiply(DQ[:, 2], np.append(np.divide(np.diff(DQ[:, 1]), np.diff(DQ[:, 0])), np.divide(np.diff(DQ[:, 1]), np.diff(DQ[:, 0]))[-1]))) + np.square(np.multiply(VQ[:, 2], np.append(np.divide(np.diff(VQ[:, 1]), np.diff(VQ[:, 0])), np.divide(np.diff(VQ[:, 1]), np.diff(VQ[:, 0]))[-1])))))), axis=-1)
-    Z = np.stack((DQ[:, 0], np.divide(VQ[:, 1], DQ[:, 1]), np.multiply(1, np.sqrt(np.square(np.multiply(DQ[:, 2], np.gradient(DQ[:, 1], DQ[:, 0]))) + np.square(np.multiply(VQ[:, 2], np.gradient(VQ[:, 1], VQ[:, 0])))))), axis=-1)
+    Z = np.stack((DQ[:, 0], np.divide(VQ[:, 1], DQ[:, 1]), np.multiply(np.abs(np.divide(VQ[:, 1], DQ[:, 1])), np.sqrt(np.square(np.divide(DQ[:, 2], DQ[:, 1])) + np.square(np.divide(VQ[:, 2], VQ[:, 1]))))), axis=-1)
     Z = excludeinvalid(Z)
     W = np.stack((Z[:, 0], integrate.cumtrapz(Z[:, 1], Z[:, 0], initial=Z[:, 1][0]), Z[:, 2]), axis=-1)
     W = excludeinvalid(W)
@@ -838,7 +890,7 @@ def do_calculation(runId, path, filename, OUTPUT_FOLDER, beta, Eq, Q_zero, Q_one
 
     # write parameters input to a log file
     X = [beta, Eq, Q_zero, Q_one, Qbins, time_step, Snapshot, tmin, tmax]
-    np.savetxt(out_folder + 'input_parameters.log', X, delimiter=',',
+    np.savetxt(out_folder + 'input_parameters.log', X, delimiter=',', fmt="%f",
                header="[beta, EquilibrationSteps, Q_zero, Q_one, Qbins, time_step, Snapshot, tmin, tmax]")
 
 
