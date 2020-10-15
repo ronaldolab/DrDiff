@@ -645,6 +645,101 @@ def calcttrajectory(Qzero, Qone, Qtr):
 
 ################################################################################
 
+
+################################################################################
+# Set of functions to evaluate p(TP|x)                                         #
+#                                                                              #
+################################################################################
+def get_histogram(trajectory, dx, weights=None, dt=1):
+    """
+    Function to generate a histogram with dx as bin size, dt is the  \
+    normalization value (if applicable).
+    Return:
+      sbins: upper bond value for each bin;
+      svalues: the number of elements inside each bin definition, divided by dx.
+    """
+    trajectory = np.asarray(trajectory)
+    sbins = np.arange(trajectory.min(), trajectory.max(), dx)
+    svalues = np.divide(np.asarray(\
+                [np.equal(np.digitize(trajectory[weights], sbins), x).sum() \
+                for x in range(1, np.shape(sbins)[0] + 1)]), dx)
+    return svalues, sbins
+
+
+def get_state(trajectory, a, b):
+    """Function to return the state for each frame, based on the following \
+    criteria: below or equal a --> 0; between a and b --> 1; above or equal \
+    b --> 2"""
+    trajectory = np.asarray(trajectory)
+    if a > b:
+        a, b = b, a
+    state = np.ones(shape=np.shape(trajectory)[0])
+    state[np.less_equal(trajectory, a)] = 0
+    state[np.greater_equal(trajectory, b)] = 2
+    return state
+
+
+def ret_changed_idx(state):
+    """Function to return the indexes where the state has changed."""
+    return np.where(np.not_equal(np.roll(state, 1), state))[0]
+
+
+def get_transitions(state):
+    """Function to return the transitions indexes, where the first value for \
+    each row is when it starts and the second when it ends from the state \
+    vector."""
+    idx_changed = ret_changed_idx(state)
+    if state[0] != 1:
+        s = state[0]
+        checked = []
+    else:
+        for i, j in enumerate(state):
+            if j != 1:
+                s = j
+                checked = [i]
+                break
+    for i, j in enumerate(idx_changed):
+        if state[j] == 2 and s != 2:
+            s = 2
+            checked.append([idx_changed[i-1], j])
+        if state[j] == 0 and s != 0:
+            s = 0
+            checked.append([idx_changed[i-1], j])
+    return np.asarray(checked)
+
+
+def evaluate_ptpx(trajectory, a, b, dx=1, dt=1):
+    """
+    Function to evaluate the probability of being in a transition path \
+    given the transition boundaries.
+    Input:
+      trajectory: 1-D trajectory (numpy.array)
+      dx: bin size
+      a, b: transition state boundaries.
+    Output:
+      p(TP|x): Nx2 numpy.array
+    """
+    trajectory = np.asarray(trajectory)
+    #Vector with the successful transitions tagged with one.
+    weight_transitions = np.zeros(shape=trajectory.shape[0])
+    pairs_transitions = get_transitions(get_state(trajectory, a, b))
+    for transition in pairs_transitions:
+        weight_transitions[transition[0]: transition[1]] = 1
+    # Transform weight_transitions to a boolean index array
+    wvalues, wbins = get_histogram(trajectory, dx, \
+                                   weights=weight_transitions.astype(bool), \
+                                   dt=dt)
+    avalues, abins = get_histogram(trajectory, dx, dt=dt)
+    tvalues = np.zeros(shape=avalues.shape[0])
+    fvalues = np.divide(wvalues, avalues, out=tvalues, \
+                        where=np.not_equal(avalues, 0))
+    ptpx_array = np.concatenate((abins.reshape(-1, 1), \
+                                fvalues.reshape(-1, 1)), axis=1)
+    return ptpx_array
+
+################################################################################
+
+
 ################################################################################
 # Plot the trajectory Q in a svg figure with matplotlib                        #
 #                                                                              #
