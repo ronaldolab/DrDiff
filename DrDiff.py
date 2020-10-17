@@ -650,21 +650,6 @@ def calcttrajectory(Qzero, Qone, Qtr):
 # Set of functions to evaluate p(TP|x)                                         #
 #                                                                              #
 ################################################################################
-def get_histogram(trajectory, dx, weights=None, dt=1):
-    """
-    Function to generate a histogram with dx as bin size, dt is the  \
-    normalization value (if applicable).
-    Return:
-      sbins: upper bond value for each bin;
-      svalues: the number of elements inside each bin definition, divided by dx.
-    """
-    trajectory = np.asarray(trajectory)
-    sbins = np.arange(trajectory.min(), trajectory.max(), dx)
-    svalues = np.divide(np.asarray(\
-                [np.equal(np.digitize(trajectory[weights], sbins), x).sum() \
-                for x in range(1, np.shape(sbins)[0] + 1)]), dx)
-    return svalues, sbins
-
 
 def get_state(trajectory, a, b):
     """Function to return the state for each frame, based on the following \
@@ -708,34 +693,49 @@ def get_transitions(state):
     return np.asarray(checked)
 
 
-def evaluate_ptpx(trajectory, a, b, dx=1, dt=1):
+def create_weights(trajectory, a, b):
+    """
+    Function to return the trajectory weights, assigning one to frames \
+    involved in transitions and zeros otherwise.
+    Input:
+      trajectory: 1-D trajectory (numpy.array)
+      a, b: transition state boundaries.
+    Output:
+      p(TP|x): Nx2 numpy.array
+    """
+    weight_transitions = np.zeros(shape=trajectory.shape[0])
+    pairs_transitions = get_transitions(get_state(trajectory, a, b))
+    for transition in pairs_transitions:
+        weight_transitions[transition[0]: transition[1]] = 1
+    return weight_transitions
+
+
+def evaluate_ptpx(trajectory, a, b, nbins=50, dt=1):
     """
     Function to evaluate the probability of being in a transition path \
     given the transition boundaries.
     Input:
       trajectory: 1-D trajectory (numpy.array)
-      dx: bin size
       a, b: transition state boundaries.
+      nbins: number of bins to be used.
+      dt: time correction (correspondent time unit of each frame).
     Output:
       p(TP|x): Nx2 numpy.array
     """
     trajectory = np.asarray(trajectory)
-    #Vector with the successful transitions tagged with one.
-    weight_transitions = np.zeros(shape=trajectory.shape[0])
-    pairs_transitions = get_transitions(get_state(trajectory, a, b))
-    for transition in pairs_transitions:
-        weight_transitions[transition[0]: transition[1]] = 1
-    # Transform weight_transitions to a boolean index array
-    wvalues, wbins = get_histogram(trajectory, dx, \
-                                   weights=weight_transitions.astype(bool), \
-                                   dt=dt)
-    avalues, abins = get_histogram(trajectory, dx, dt=dt)
-    tvalues = np.zeros(shape=avalues.shape[0])
-    fvalues = np.divide(wvalues, avalues, out=tvalues, \
-                        where=np.not_equal(avalues, 0))
-    ptpx_array = np.concatenate((abins.reshape(-1, 1), \
-                                fvalues.reshape(-1, 1)), axis=1)
+    #Vector with the successful transition frames tagged with one.
+    weight_transitions = create_weights(trajectory, a, b)
+    all_values, all_bins_edges = np.histogram(trajectory, bins=nbins)
+    sel_values, sel_bins_edges = np.histogram(trajectory, bins=nbins, \
+                                              weights=weight_transitions)
+    bins_centers = np.divide(np.add(all_bins_edges[1:], all_bins_edges[:-1]), 2)
+    tvalues = np.zeros(shape=all_values.shape[0])
+    fvalues = np.divide(sel_values, all_values, out=tvalues, \
+                        where=np.not_equal(all_values, 0))
+    ptpx_array = np.concatenate((bins_centers.reshape(-1, 1), \
+                                 fvalues.reshape(-1, 1)), axis=1)
     return ptpx_array
+
 
 ################################################################################
 
