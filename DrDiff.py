@@ -674,14 +674,13 @@ def get_transitions(state):
     each row is when it starts and the second when it ends from the state \
     vector."""
     idx_changed = ret_changed_idx(state)
+    checked = []
     if state[0] != 1:
         s = state[0]
-        checked = []
     else:
         for i, j in enumerate(state):
             if j != 1:
                 s = j
-                checked = [i]
                 break
     for i, j in enumerate(idx_changed):
         if state[j] == 2 and s != 2:
