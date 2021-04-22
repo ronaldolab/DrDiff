@@ -54,20 +54,20 @@ def main():
 
     ## Global variables declaration
 
-    Equilibration_Steps = 10        # Equilibration Steps - Value to ignore the first X numbers from the traj file
-    Qbins = 1         # Estimated bin width used to analyze the trajectory
-    tmax = 6         # Default 6
-    tmin = 2         # Default 2
-    time_step = 0.0005    # time step value used to save the trajectory file - Default 0.001
-    Snapshot = 50        # Snapshots from simulation
-    beta = 1         # beta is 1/k_B*T
-    Q_zero = 80        # Initial transition boundary
-    Q_one = 230       # Final transition boundary
+    Equilibration_Steps = 2000  # Equilibration Steps - Value to ignore the first X numbers from the traj file
+    nbins = 100                 # Number of bins to be used while analyzing the trajectory
+    tmax = 6                    # Default 6
+    tmin = 2                    # Default 2
+    time_step = 0.002           # time step value used to save the trajectory file - Default 0.001
+    Snapshot = 5000             # Snapshots from simulation
+    beta = 1                    # beta is 1/k_B*T
+    Q_zero = 2.5                # Initial transition boundary
+    Q_one = 4.2                 # Final transition boundary
 
     #working directory
     w_directory = str(os.getcwd()) + '/'
 
-    result_times, out_traj, error_DrDiff = drdiff.do_calculation(('out-' + FILENAME + '-'), w_directory, (w_directory + FILENAME), (w_directory + 'out-' + FILENAME + '-'), beta, Equilibration_Steps, Q_zero, Q_one, Qbins, time_step, Snapshot, tmin, tmax)
+    result_times, out_traj, error_DrDiff = drdiff.do_calculation(('out-' + FILENAME + '-'), w_directory, (w_directory + FILENAME), (w_directory + 'out-' + FILENAME + '-'), beta, Equilibration_Steps, Q_zero, Q_one, nbins, time_step, Snapshot, tmin, tmax)
 
 
 if __name__ == "__main__": main()
