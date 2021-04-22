@@ -153,7 +153,7 @@ def Free_energy_Histogram_Q(Qf, nbins, beta):
     #id = argrelmin(FG)[-1][-1]
     #Free[:,1] = Free[:,1]-Free[:,1][id]
 
-    return Free
+    return Free, bins
 
 ################################################################################
 
@@ -199,28 +199,59 @@ def excludeinvalid1D(M):
     return M
 ################################################################################
 
+
+################################################################################
+# Method to get the indexes accordingly the bins edges                         #
+#                                                                              #
+################################################################################
+def indexing_trajectory(trajectory, bin_edges):
+    idx_list = []
+    print(np.shape(bin_edges)[0])
+    for i in range(np.shape(bin_edges)[0]-2):
+        idx_list.append(np.logical_and(np.greater_equal(trajectory, \
+                                                        bin_edges[i]), \
+                                       np.less(trajectory, bin_edges[i+1])))
+        print(i, i+1)
+    idx_list.append(np.logical_and(np.greater_equal(trajectory, \
+                                                    bin_edges[-2]), \
+                                   np.less_equal(trajectory, bin_edges[-1])))
+    return idx_list
+################################################################################
+
+
 ################################################################################
 # Method to calculate D(Q) and v(Q)                                            #
 #                                                                              #
 ################################################################################
-def CalculateD_V(Q, Qmin, Qmax, Qbins, nbins, tmin, tmax, CorrectionFactor):
+def CalculateD_V(Q, Qmin, Qmax, nbins, tmin, tmax, \
+                 CorrectionFactor):
 
     DQ = np.empty(shape=(0, 3))
     VQ = np.empty(shape=(0, 3))
 
+    # Indexing the trajectory following the binning from histogram
+    _, tbins_edges = Free_energy_Histogram_Q(Q, nbins, 1)
+    qindexes = indexing_trajectory(Q, tbins_edges)
+
     # Vector just to avoid the empty end of file
-    Add_end = np.linspace(Qmax, Qmax+Qbins, tmax + 1)
+    add_end = np.copy(Q[-tmax:])
+    end_indexes = np.zeros_like(add_end, dtype=bool)
+    for i, each in enumerate(qindexes):
+        qindexes[i] = np.concatenate((each, end_indexes))
 
-    Q = np.concatenate((Q, Add_end))
+    Q = np.concatenate((Q, add_end))
 
-    bins        = np.linspace(Qmin, Qmax, nbins + 1)
-    binscenter  = np.delete(np.divide((bins[:-1] + bins[1:]), 2.0), -1)
+    #bins        = np.linspace(Qmin, Qmax, nbins + 1)
+    #binscenter  = np.delete(np.divide((bins[:-1] + bins[1:]), 2.0), -1)
+    binscenter  = np.divide((tbins_edges[:-1] + tbins_edges[1:]), 2.0)
 
     # Calculate D and V coefficients as a function of Q
-    for Qi in binscenter:
+    for i, Qi in enumerate(binscenter):
 
         # Find the Value of Qi with a bin in trajectory
-        Q_index = np.array(np.where((Qi + Qbins > Q) & (Qi - Qbins < Q)))[0]
+        #Q_index = np.array(np.where((Qi + Qbins > Q) & (Qi - Qbins < Q)))[0]
+        Q_index = qindexes[i]
+        Q_index = np.where(Q_index==True)[0]
 
         D = np.empty(shape=(0, 2))
         V = np.empty(shape=(0, 2))
@@ -848,14 +879,14 @@ def plotly_Q(Q, output_file_Q, Q_zero, Q_one):
 # this definition is for the form from the main.py website framework           #
 #                                                                              #
 ################################################################################
-def do_calculation(runId, path, filename, OUTPUT_FOLDER, beta, Eq, Q_zero, Q_one, Qbins, time_step, Snapshot, tmin, tmax):
+def do_calculation(runId, path, filename, OUTPUT_FOLDER, beta, Eq, Q_zero, Q_one, nbins, time_step, Snapshot, tmin, tmax):
 
     ## Global variables declaration
     # NOW SHOULD BE IN THE DO_CALCULATION DEFINITION
     # Receive from the main_page_form and output to an log file
 
     # Eq          = 10        # Equilibration Steps - Value to ignore the first X numbers from the traj file
-    # Qbins       = 1         # Estimated bin width used to analyze the trajectory
+    # nbins       = 1         # Number of bins to be used while analysing the trajectory
     # tmax        = 6         # Default 6
     # tmin        = 2         # Default 2
     # time_step   = 0.0005    # time step value used to save the trajectory file - Default 0.001
@@ -884,7 +915,7 @@ def do_calculation(runId, path, filename, OUTPUT_FOLDER, beta, Eq, Q_zero, Q_one
     #out_file_Q = path + '/static/trajectories/' + str(runId) + '_traj.svg'
     out_file_Q = out_folder + 'traj.svg'
 
-    plot_Q(Q, out_file_Q)
+    #plot_Q(Q, out_file_Q)
 
     #plotly_Q(Q, out_file_Q, Q_zero, Q_one) # remove this
 
@@ -905,16 +936,16 @@ def do_calculation(runId, path, filename, OUTPUT_FOLDER, beta, Eq, Q_zero, Q_one
         pass
         #print('The analysis will start.')
     # Number of bins for the reaction coordinate, Q
-    nbins = np.int(np.ceil(np.divide((Qmax - Qmin), Qbins)))
+    #nbins = np.int(np.ceil(np.divide((Qmax - Qmin), Qbins)))
 
     # Calculate Free Energy F(Q) from histogram (bins_center)
-    Free = Free_energy_Histogram_Q(Q, nbins, beta)
+    Free, _ = Free_energy_Histogram_Q(Q, nbins, beta)
 
     # Write FQ output file
     np.savetxt(out_folder + 'Free_energy.dat', Free)
 
     # Calculate D and v (Q)
-    DQ, VQ = CalculateD_V(Q, Qmin, Qmax, Qbins, nbins, tmin, tmax, CorrectionFactor)
+    DQ, VQ = CalculateD_V(Q, Qmin, Qmax, nbins, tmin, tmax, CorrectionFactor)
 
     # Save D and V files
     np.savetxt(out_folder + 'DQ.dat', DQ)
@@ -983,9 +1014,9 @@ def do_calculation(runId, path, filename, OUTPUT_FOLDER, beta, Eq, Q_zero, Q_one
     f_dict.close()
 
     # write parameters input to a log file
-    X = [beta, Eq, Q_zero, Q_one, Qbins, time_step, Snapshot, tmin, tmax]
+    X = [beta, Eq, Q_zero, Q_one, nbins, time_step, Snapshot, tmin, tmax]
     np.savetxt(out_folder + 'input_parameters.log', X, delimiter=',', fmt="%f",
-               header="[beta, EquilibrationSteps, Q_zero, Q_one, Qbins, time_step, Snapshot, tmin, tmax]")
+               header="[beta, EquilibrationSteps, Q_zero, Q_one, nbins, time_step, Snapshot, tmin, tmax]")
 
 
     return (dict_times, out_file_Q, error)
