@@ -6,7 +6,8 @@ References:
 Stochastic diffusion framework determines the free-energy landscape and rate from single-molecule trajectory. Ronaldo J. Oliveira. The Journal of Chemical Physics, Volume 149, Issue 23, Page 234107, 2018. 
 https://aip.scitation.org/doi/10.1063/1.5052142
 
-Drift-diffusion (DrDiff) framework determines kinetics and thermodynamics of two-state folding trajectory and tunes diffusion models. Frederico Campos Freitas, Angelica Nakagawa Lima, Vinicius de Godoi Contessoto, Paul C. Whitford and Ronaldo Junio de Oliveira. <i> Manuscript submited. </i>
+Drift-diffusion (DrDiff) framework determines kinetics and thermodynamics of two-state folding trajectory and tunes diffusion models. Frederico Campos Freitas, Angelica Nakagawa Lima, Vinicius de Godoi Contessoto, Paul C. Whitford and Ronaldo Junio de Oliveira, Journal Of Chemical Physics, v. 151, n. 11, 13 p., 2019.
+https://aip.scitation.org/doi/10.1063/1.5113499
 
 ### Snapshot with transitions between two states, alongside the D(Q), F(Q) and v(Q) for prion protein (PrP) analysis.
 ![Snapshot with transitions between two states, alongside the D(Q), F(Q) and v(Q) for prion protein (PrP) analysis.](https://github.com/ronaldolab/DrDiff/blob/master/figures/Prion_Traj_F_D_D02_v4.png)
