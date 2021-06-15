@@ -63,14 +63,15 @@ import matplotlib.pyplot as plt
 #                                                                              #
 ################################################################################
 def clean_file(file):
+    tempfile = "temporary" + str(np.random.randint(300000))
     with open(file, "r") as f:
         data = f.read()
-    with open("temporary", "w") as temp:
+    with open(tempfile, "w") as temp:
         temp.write(data)
     for pattern in ["^@.*|^%.*|^#.*|^;.*|^!.*|^[A-z].*|^$.*"]:
         matched = re.compile(pattern).search
-        with open("temporary", "r") as temp:
-            with open("temporary2", "w") as outfile:
+        with open(tempfile, "r") as temp:
+            with open(tempfile  + "2", "w") as outfile:
                 for line in temp:
                     if not matched(line):
                         outfile.write(line)
@@ -206,12 +207,12 @@ def excludeinvalid1D(M):
 ################################################################################
 def indexing_trajectory(trajectory, bin_edges):
     idx_list = []
-    print(np.shape(bin_edges)[0])
+    #print(np.shape(bin_edges)[0])
     for i in range(np.shape(bin_edges)[0]-2):
         idx_list.append(np.logical_and(np.greater_equal(trajectory, \
                                                         bin_edges[i]), \
                                        np.less(trajectory, bin_edges[i+1])))
-        print(i, i+1)
+        #print(i, i+1)
     idx_list.append(np.logical_and(np.greater_equal(trajectory, \
                                                     bin_edges[-2]), \
                                    np.less_equal(trajectory, bin_edges[-1])))
