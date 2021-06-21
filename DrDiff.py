@@ -76,7 +76,7 @@ def clean_file(file):
                     if not matched(line):
                         outfile.write(line)
         os.replace(outfile.name, temp.name)
-    return "temporary"
+    return tempfile
 
 ################################################################################
 
@@ -94,7 +94,7 @@ def read_large_txt(file, eq_steps=0, delimiter=None, dtype=None):
         FileObj.seek(0)
         for i, line in enumerate(FileObj):
             out[i] = line.split(delimiter)
-    return out[np.int(eq_steps):]
+    return out[int(eq_steps):]
 
 ################################################################################
 
