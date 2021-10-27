@@ -12,7 +12,7 @@
 #                                                                              #
 # Contribute by:                                                               #
 #   Frederico Campos Freitas:       fredcfreitas        @gmail.com             #
-#   Vinícius de Godoi Contessoto:   vinicius.contessoto @gmail.com             #
+#   Vinicius de Godoi Contessoto:   vinicius.contessoto @gmail.com             #
 #   Ronaldo Junio de Oliveira:      ronaldo.oliveira    @uftm.edu.br           #
 #                                                                              #
 #                                                                              #
