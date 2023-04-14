@@ -59,7 +59,7 @@ import matplotlib.pyplot as plt
 #import plotly.io as pio         # remove this
 
 ################################################################################
-# Method to clean the commentary lines from  the trajectory file               #
+# Method to clean the comments from  the trajectory file                       #
 #                                                                              #
 ################################################################################
 def clean_file(file):
@@ -869,6 +869,54 @@ def plotly_Q(Q, output_file_Q, Q_zero, Q_one):
     return
 
 ################################################################################
+
+
+
+################################################################################
+# Evaluate the p(TP|x) for the trajectory given boundaries a and b and nbins   #
+#                                                                              #
+################################################################################
+def evaluate_ptpx(trajectory, a, b, nbins=50, dt=1):
+    """
+    Function to evaluate the probability of being in a transition path \
+    given the transition boundaries.
+    Input:
+      trajectory: 1-D trajectory (numpy.array)
+      a, b: transition state boundaries (floats).
+      nbins: number of bins to be used.
+      dt: time correction (correspondent time unit of each frame).
+    Output:
+      p(TP|x): Nx2 numpy.array
+    """
+    trajectory = np.asarray(trajectory)
+    # Vector with the successful transition frames tagged with one.
+    weight_transitions = create_weights(trajectory, a, b)
+    all_values, all_bins_edges = np.histogram(trajectory, bins=nbins)
+    sel_values, sel_bins_edges = np.histogram(
+        trajectory, bins=nbins, weights=weight_transitions
+    )
+    bins_centers = np.divide(
+        np.add(all_bins_edges[1:], all_bins_edges[:-1]), 2
+    )
+    tvalues = np.zeros(shape=all_values.shape[0])
+    fvalues = np.divide(
+        sel_values, all_values, out=tvalues, where=np.not_equal(all_values, 0)
+    )
+    ptpx_array = np.concatenate(
+        (
+            np.multiply(bins_centers.reshape(-1, 1), dt),
+            fvalues.reshape(-1, 1),
+        ),
+        axis=1,
+    )
+    return ptpx_array
+################################################################################
+
+
+
+
+
+
 
 ################################################################################
 #                                                                              #
