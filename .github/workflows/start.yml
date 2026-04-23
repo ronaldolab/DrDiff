@@ -1,0 +1,57 @@
+name: Updating Jupyter notebooks
+
+on: 
+  push:
+    paths:
+      - 'src/**' # Triggers on changes within the 'src' directory and its subdirectories
+  pull_request:
+    paths:
+      - 'src/**'
+jobs:
+  build:
+# building the environment
+    runs-on: ubuntu-latest
+    if: github.event.head_commit.message != 'Updating the notebooks according last script(s) changes'
+    strategy:
+      matrix:
+        python-version: [3.12]
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+
+#       - uses: actions/checkout@v4
+#       # Make sure the @v0.7.0 matches the current version of the action
+#       - uses: webfactory/ssh-agent@v0.9.0
+#         with:
+#           ssh-private-key: ${{ secrets.DEBIAN }}
+
+#       - name: Creating the Jupyter Notebook
+#         run: |
+#           py2nb src/tuningdiffusion.py
+#           py2nb src/tuningdiffusion_sin.py
+#       - name: Committing the generated files # 
+#         run: |
+#           git config --local user.email "github-actions[bot]@users.noreply.github.com"
+#           git config --local user.name "github-actions[bot]"
+#           git config --local url."git@github.com:".insteadOf "https://github.com/"
+#           git add .
+#           git commit -m "Updating the notebooks according last script(s) changes"
+# #          git push
+#       - name: Push changes # 
+#         uses: ad-m/github-push-action@master
+#         with:
+#           ssh: true
+#           ssh-private-key: ${{ secrets.DEBIAN }}
+# #          github_token: ${{ secrets.GITHUB_TOKEN }}
+#           ssh_key: ${{ secrets.DEBIAN }}
+#           branch: ${{ github.ref }}
+#           force: true
