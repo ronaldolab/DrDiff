@@ -133,6 +133,19 @@ def ptpx(beta, Qzero, Qone, DQ, G):
 ################################################################################
 
 ################################################################################
+# Function to evalutate cumulative trapezoid integral                          #
+#                                                                              #
+
+def eval_cumulative_trapezoid_integral(chosen_array, initial_value=0):
+    res_integral = integrate.cumulative_trapezoid(chosen_array[:,1], 
+                                                  chosen_array[:,0], axis=0, 
+                                                  initial=initial_value)[-1]
+    return res_integral
+################################################################################
+
+################################################################################
+
+################################################################################
 # Function to calculate t_{folding} using Kramers equation                     #
 #                                                                              #
 ################################################################################
@@ -162,21 +175,21 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
         for Qk in G[:,0][idxinit:idxj+y:y]: #summing from Qinit to Qj
             krow, kcol = np.where(G == Qk)
             if (np.not_equal(np.size(irow), 0) and np.not_equal(np.size(jrow), 0) and np.not_equal(np.size(krow), 0)):
-                if not ((abs(float(G[np.int(jrow[0]), 1])) >= (abs(np.nanmean(G, axis=0)[1])+abs(3*np.nanstd(G, axis=0)[1]))) or (abs(float(G[np.int(jrow[0]), 1])) <= (abs(np.nanmean(G, axis=0)[1])-abs(3*np.nanstd(G, axis=0)[1])))):
-                    GQ1 = (float(G[np.int(jrow[0]), 1]))
-                    err1 = (float(G[np.int(jrow[0]), 2]))
+                if not ((abs(float(G[int(jrow[0]), 1])) >= (abs(np.nanmean(G, axis=0)[1])+abs(3*np.nanstd(G, axis=0)[1]))) or (abs(float(G[int(jrow[0]), 1])) <= (abs(np.nanmean(G, axis=0)[1])-abs(3*np.nanstd(G, axis=0)[1])))):
+                    GQ1 = (float(G[int(jrow[0]), 1]))
+                    err1 = (float(G[int(jrow[0]), 2]))
                 else:
                     GQ1 = np.nan
                     err1 = np.nan
-                if not ((abs(float(G[np.int(krow[0]), 1])) >= (abs(np.nanmean(G, axis=0)[1])+abs(3*np.nanstd(G, axis=0)[1]))) or (abs(float(G[np.int(krow[0]), 1])) <= (abs(np.nanmean(G, axis=0)[1])-abs(3*np.nanstd(G, axis=0)[1])))):
-                    GQ2 = (float(G[np.int(krow[0]), 1]))
-                    err2 = (float(G[np.int(krow[0]), 2]))
+                if not ((abs(float(G[int(krow[0]), 1])) >= (abs(np.nanmean(G, axis=0)[1])+abs(3*np.nanstd(G, axis=0)[1]))) or (abs(float(G[int(krow[0]), 1])) <= (abs(np.nanmean(G, axis=0)[1])-abs(3*np.nanstd(G, axis=0)[1])))):
+                    GQ2 = (float(G[int(krow[0]), 1]))
+                    err2 = (float(G[int(krow[0]), 2]))
                 else:
                     GQ2 = np.nan
                     err2 = np.nan
-                utau = ((np.exp(beta*(GQ1-GQ2)))/(float(DQ[np.int(irow[0]), 1]))) #calculating t_folding/unfolding
-                if float(DQ[np.int(irow[0]), 1]) !=0:
-                    uncerutau = np.absolute(utau)*np.sqrt(np.square(beta)*(np.square(err1)+np.square(err2))+np.square(float(DQ[np.int(irow[0]), 2])/float(DQ[np.int(irow[0]), 1])))
+                utau = ((np.exp(beta*(GQ1-GQ2)))/(float(DQ[int(irow[0]), 1]))) #calculating t_folding/unfolding
+                if float(DQ[int(irow[0]), 1]) !=0:
+                    uncerutau = np.absolute(utau)*np.sqrt(np.square(beta)*(np.square(err1)+np.square(err2))+np.square(float(DQ[int(irow[0]), 2])/float(DQ[int(irow[0]), 1])))
                 else:
                     uncerutau = 0
             else:
@@ -184,11 +197,11 @@ def calctau(beta, Qinit, Qzero, Qone, DQ, G):
                 uncerutau = 0
             tau = np.append(tau, [[Qk, utau, uncerutau]], axis=0)
             tau = excludeinvalid(tau)
-        inttau = integrate.cumtrapz(tau[:,1], tau[:,0], axis=0, initial=tau[0,1])[-1] #inner integral
+        inttau = eval_cumulative_trapezoid_integral(tau) #inner integral
         uncertau = inttau*np.sqrt(np.mean(np.square(excludeinvalid1D(tau[:,2]/tau[:,1])))) #estimating error in inner integral
         taul = np.append(taul, [[Qj, inttau, uncertau]], axis=0)
         taul = excludeinvalid(taul)
-    inttaul = integrate.cumtrapz(taul[:,1], taul[:,0], axis=0, initial=taul[0,1])[-1] #outer integral
+    inttaul = eval_cumulative_trapezoid_integral(taul) #outer integral
     uncerttaul = inttaul*np.sqrt(np.amax(np.square(excludeinvalid1D(taul[:,2]/taul[:,1])))) #estimating error in inner integral
     return inttaul, uncerttaul
 
@@ -204,10 +217,10 @@ def calcmtpt(beta, Qzero, Qone, DQ, G):
     G = np.asarray(G)
     #left part of the integral
     vlint = simpleint(testcalc, lcoreint, beta, Qzero, Qone, G, DQ)
-    intlintegral = integrate.cumtrapz(vlint[:,1], vlint[:,0], axis=0, initial=vlint[0,1])[-1] #left integral from Qunf to Qfold
+    intlintegral = eval_cumulative_trapezoid_integral(vlint) #left integral from Qunf to Qfold
     #right part of integral
     vrint = simpleint(testcalc, rcoreint, beta, Qzero, Qone, G, DQ)
-    intrintegral = integrate.cumtrapz(vrint[:,1], vrint[:,0], axis=0, initial=vrint[0,1])[-1] #right integral from Qunf to Qfold
+    intrintegral = eval_cumulative_trapezoid_integral(vrint) #right integral from Qunf to Qfold
     inttpt = intlintegral*intrintegral
     np.seterr(divide='ignore', invalid='ignore')
     unmtpt = np.absolute(inttpt)*np.sqrt(np.mean(np.square(excludeinvalid1D(vlint[:,2]/vlint[:,1]))) + np.mean(np.square(excludeinvalid1D(vrint[:,2]/vrint[:,1])))) #use max uncertainty evaluated in both integral combinations
@@ -219,9 +232,9 @@ def calcmtpt(beta, Qzero, Qone, DQ, G):
 #                                                                              #
 ################################################################################
 def rcoreint(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
-    val = ((np.exp(beta*(GQ1)))/(float(DQ[np.int(irow[0]), 1]))) #calculating rintegral
-    if np.not_equal(float(DQ[np.int(irow[0]), 1]), 0):
-        uncert = np.absolute(val)*(np.sqrt(np.square(beta)*np.square(unc)+np.square(float(DQ[np.int(irow[0]), 2])/float(DQ[np.int(irow[0]), 1]))))
+    val = ((np.exp(beta*(GQ1)))/(float(DQ[int(irow[0]), 1]))) #calculating rintegral
+    if np.not_equal(float(DQ[int(irow[0]), 1]), 0):
+        uncert = np.absolute(val)*(np.sqrt(np.square(beta)*np.square(unc)+np.square(float(DQ[int(irow[0]), 2])/float(DQ[int(irow[0]), 1]))))
     else:
         uncert = 0
     return val, uncert
@@ -248,9 +261,9 @@ def phi(beta, Qzero, Qone, DQ, G, qx):
     DQ = np.asarray(DQ)
     G = np.asarray(G)
     vlowphi = simpleint(testcalc, equationphi, beta, Qzero, Qone, G, DQ)
-    intlowphi = integrate.cumtrapz(vlowphi[:,1], vlowphi[:,0], axis=0, initial=vlowphi[0,1])[-1] #denominator integral from Qzero to Qone
+    intlowphi = eval_cumulative_trapezoid_integral(vlowphi) #denominator integral from Qzero to Qone
     vupphi =  simpleint(testcalc, equationphi, beta, Qzero, qx, G, DQ)
-    intupphi = integrate.cumtrapz(vupphi[:,1], vupphi[:,0], axis=0, initial=vupphi[0,1])[-1] #numerator integral from Qzero to Q
+    intupphi = eval_cumulative_trapezoid_integral(vupphi) #numerator integral from Qzero to Q
     phix = np.divide(intupphi, intlowphi)
     uncphi = np.absolute(phix)*np.sqrt(np.mean(np.square(excludeinvalid1D(vupphi[:,2]/vupphi[:,1]))) + np.mean(np.square(excludeinvalid1D(vlowphi[:,2]/vlowphi[:,1])))) #use max uncertainty evaluated in both integral combinations
     return phix, uncphi
@@ -282,9 +295,9 @@ def simpleint(calctest, funcion, beta, Qzero, Qone, G, DQ):
 #                                                                              #
 ################################################################################
 def equationphi(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
-    val = np.divide((np.exp(beta*(GQ1))), (float(DQ[np.int(irow[0]), 1]))) #calculating phi core
-    if float(DQ[np.int(irow[0]), 1]) != 0:
-        uncert = np.absolute(val)*(np.sqrt(np.square(beta)*np.square(unc)+np.square(float(DQ[np.int(irow[0]), 2])/float(DQ[np.int(irow[0]), 1]))))
+    val = np.divide((np.exp(beta*(GQ1))), (float(DQ[int(irow[0]), 1]))) #calculating phi core
+    if float(DQ[int(irow[0]), 1]) != 0:
+        uncert = np.absolute(val)*(np.sqrt(np.square(beta)*np.square(unc)+np.square(float(DQ[int(irow[0]), 2])/float(DQ[int(irow[0]), 1]))))
     else:
         uncert = 0
     return val, uncert
@@ -297,9 +310,9 @@ def equationphi(irow, jrow, G, DQ, beta, GQ1, unc, Qx, Qzero, Qone):
 def testcalc(eq, irow, jrow, G, DQ, beta, Qx, Qzero, Qone):
     eval = 0
     if (np.size(irow) != 0 and np.size(jrow) != 0):
-        if not ((abs(float(G[np.int(jrow[0]), 1])) >= (abs(np.nanmean(G, axis=0)[1])+abs(3*np.nanstd(G, axis=0)[1]))) or (abs(float(G[np.int(jrow[0]), 1])) <= (abs(np.nanmean(G, axis=0)[1])-abs(3*np.nanstd(G, axis=0)[1])))):
-            GQ1 = (float(G[np.int(jrow[0]), 1]))
-            unci = (float(G[np.int(jrow[0]), 2]))
+        if not ((abs(float(G[int(jrow[0]), 1])) >= (abs(np.nanmean(G, axis=0)[1])+abs(3*np.nanstd(G, axis=0)[1]))) or (abs(float(G[int(jrow[0]), 1])) <= (abs(np.nanmean(G, axis=0)[1])-abs(3*np.nanstd(G, axis=0)[1])))):
+            GQ1 = (float(G[int(jrow[0]), 1]))
+            unci = (float(G[int(jrow[0]), 2]))
         else:
             GQ1 = np.nan
             unci = np.nan
@@ -396,6 +409,18 @@ print('Transition state boundaries = ', Q_zero, ' and ', Q_one)
 
 def main():
 
+    global EQ
+    global Qbins
+    global tmax 
+    global tmin 
+    global time_step
+    global Snapshot 
+    global CorrectionFactor 
+    global beta 
+    global Q_zero
+    global Q_one 
+
+
     if len(sys.argv) > 1: ## To open just if exist  file in argument
         arg = sys.argv[1]
     else:
@@ -423,7 +448,7 @@ def main():
     else:
         print('The analysis will start.')
     #print('################################################')
-    nbins = np.int(np.ceil((Qmax-Qmin)/Qbins))
+    nbins = int(np.ceil((Qmax-Qmin)/Qbins))
     Free_energy_Histogram_Q(arg, Q, nbins) ## Call function to Free Energy and Histogram
     DQ=[]
     VQ=[]
@@ -453,8 +478,10 @@ def main():
             D.append([t, 0.5*np.var(y)]) # Variance calculation - sigma^2
             V.append([t, np.mean(y)]) # Mean of histogram calculation - Qc
 
-        sloped, interceptd, r_valued, p_valued, std_errd = stats.linregress(D) # Linear regression - sloped is the difusion
-        slopev, interceptv, r_valuev, p_valuev, std_errv = stats.linregress(V) # Linear regression - slopev is the drift
+        D = np.asarray(D)
+        V = np.asarray(V)
+        sloped, interceptd, r_valued, p_valued, std_errd = stats.linregress(D[:, 0], D[:, 1]) # Linear regression - sloped is the difusion
+        slopev, interceptv, r_valuev, p_valuev, std_errv = stats.linregress(V[:, 0], V[:, 1]) # Linear regression - slopev is the drift
         DQ.append([Qi, sloped/CorrectionFactor, std_errd]) # Save Diffusion for each coordinate value
         VQ.append([Qi, slopev/CorrectionFactor, std_errv]) # Save Drift for each coordinate value
     #Pbar.finish()
@@ -473,15 +500,15 @@ def main():
     #to calculate F_{Stochastic}
     Z = np.stack((DQ[:,0], np.divide(VQ[:,1], DQ[:,1]), np.sqrt(np.square(DQ[:,2])+np.square(VQ[:,2]))), axis=-1)
     Z = excludeinvalid(Z)
-    W = np.stack((Z[:,0], integrate.cumtrapz(Z[:,1], Z[:,0], initial=Z[:,1][0]), Z[:,2]), axis=-1)
+    W = np.stack((Z[:,0], integrate.cumulative_trapezoid(Z[:,1], Z[:,0], initial=0), Z[:,2]), axis=-1)
     W = excludeinvalid(W)
     G = np.empty(shape=[0,3])
     for Qi in DQ[:,0]:
         irow, icol = np.where(W == Qi)
         jrow, jcol = np.where(DQ == Qi)
         if (np.size(irow) != 0 and np.size(jrow) != 0):
-            GQ = -(float(W[np.int(irow[0]), 1]))+np.log(float(DQ[np.int(jrow[0]), 1]))
-            er = W[:,2][np.int(irow[0])]
+            GQ = -(float(W[int(irow[0]), 1]))+np.log(float(DQ[int(jrow[0]), 1]))
+            er = W[:,2][int(irow[0])]
         else:
             GQ = np.nan
             er = np.nan
@@ -496,7 +523,7 @@ def main():
     G[:,1] = G[:,1]-G[:,1][idmin]
 
 
-    np.savetxt('F_Stoch' + filename + '.dat', G)
+    np.savetxt('F_Stoch_' + filename + '.dat', G)
 
 
     #Module to extract lines with errors
@@ -504,7 +531,7 @@ def main():
     vfilename=str('VQ' + filename + '.dat')
     freefilename=str('Free_energy_' + arg + '.dat')
     histfilename=str('hist_' + arg + '.dat')
-    helmfilename=str('F_Stoch' + filename + '.dat')
+    helmfilename=str('F_Stoch_' + filename + '.dat')
     fn=[diffusionfilename, vfilename, freefilename, histfilename, helmfilename] #Make a list with filenames
     CheckFiles(fn)
 
